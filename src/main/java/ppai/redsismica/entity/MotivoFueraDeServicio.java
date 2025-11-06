@@ -14,15 +14,14 @@ public class MotivoFueraDeServicio {
     @JoinColumn(name = "motivo_tipo", referencedColumnName = "descripcion")
     private MotivoTipo motivoTipo;
 
-    public void MotivoFueraServicio() {
-        // Constructor vacío requerido por JPA
+    public MotivoFueraDeServicio() {
     }
 
     /**
-     * Constructor "new()" según el diagrama.
+     * Constructor "new()" (Paso 9) según el diagrama.
      * Crea una instancia de MotivoFueraServicio con comentario y motivoTipo.
      */
-    public void MotivoFueraServicio(String comentario, MotivoTipo motivoTipo) {
+    public MotivoFueraDeServicio(String comentario, MotivoTipo motivoTipo) {
         this.comentario = comentario;
         this.motivoTipo = motivoTipo;
     }

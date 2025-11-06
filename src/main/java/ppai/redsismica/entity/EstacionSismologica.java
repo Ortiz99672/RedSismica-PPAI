@@ -4,8 +4,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import ppai.redsismica.dto.EstacionSismologicaDTO;
 import ppai.redsismica.dto.SismografoDTO;
 
@@ -51,9 +53,22 @@ public class EstacionSismologica {
         return null;
     }
 
-    public void ponerSismografoFueraDeServicio() {
+    /**
+     * 7.1.12.1: Implementación de "ponerSismografoFueraDeServicio"
+     */
+    public void ponerSismografoFueraDeServicio(
+            Estado estadoSismografo,
+            LocalDateTime fechaHora,
+            Empleado empleado,
+            List<MotivoTipo> todosLosMotivos,
+            Map<String, String> motivosConComentarios
+    ) {
+        System.out.println("EstacionSismologica: Ejecutando 7.1.12.1 ponerSismografoFueraDeServicio()...");
         if (this.sismografo != null) {
-            this.sismografo.ponerFueraDeServicio();
+
+            // 7.1.12.1.1: Delega al sismógrafo
+            this.sismografo.enviarAReparar(estadoSismografo, fechaHora, empleado, todosLosMotivos, motivosConComentarios);
+
         } else {
             System.out.println("EstacionSismologica: No hay sismógrafo para poner fuera de servicio.");
         }

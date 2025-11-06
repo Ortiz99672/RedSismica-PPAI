@@ -54,11 +54,20 @@ public class Empleado {
 
     // --- Métodos del diagrama ---
     public boolean esResponsableDeReparacion() {
-        // Lógica a implementar
-        return false;
+        System.out.println("Empleado: Ejecutando 7.1.14 esResponsableDeReparacion()...");
+        if (this.rol == null) {
+            return false;
+        }
+        // 7.1.14.1: Delega la lógica al Rol
+        // (Usamos un método más expresivo que getNombre())
+        return this.rol.esRolResponsableDeReparacion();
     }
 
+    /**
+     * 7.1.15: Implementación de "obtenerMail"
+     */
     public String obtenerMail() {
+        System.out.println("Empleado: Ejecutando 7.1.15 obtenerMail()...");
         return this.mail;
     }
 

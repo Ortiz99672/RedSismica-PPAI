@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import ppai.redsismica.dto.OrdenInspeccionDTO;
 import ppai.redsismica.dto.EstadoDTO;
+import java.util.List; // Importar List
+import java.util.Map;
 
 @Entity
 public class OrdenInspeccion {
@@ -132,11 +134,27 @@ public class OrdenInspeccion {
         this.setObservacionCierre(observacion);
     }
 
-    public void enviarSismografoParaReparacion() {
+    /**
+     * 7.1.12: Implementación de "enviarSismografoParaReparacion"
+     */
+    public void enviarSismografoParaReparacion(
+            Estado estadoSismografo,
+            LocalDateTime fechaHora,
+            Empleado empleado,
+            List<MotivoTipo> todosLosMotivos,
+            Map<String, String> motivosConComentarios
+    ) {
+        System.out.println("OrdenInspeccion: Ejecutando 7.1.12 enviarSismografoParaReparacion()...");
         if(this.estacionSismologica != null) {
-            this.estacionSismologica.ponerSismografoFueraDeServicio(); // O lógica similar
+
+            // 7.1.12.1: Delega a la estación, pasando los parámetros
+            this.estacionSismologica.ponerSismografoFueraDeServicio(
+                    estadoSismografo, fechaHora, empleado, todosLosMotivos, motivosConComentarios
+            );
+
+        } else {
+            System.out.println("OrdenInspeccion: No hay estación sismológica asociada.");
         }
-        System.out.println("OrdenInspeccion: STUB - enviarSismografoParaReparacion()");
     }
 
     // --- Getters y Setters adicionales ---

@@ -28,6 +28,12 @@ public class Rol {
         return new RolDTO(this.nombre, this.descripcion);
     }
 
+    public boolean esRolResponsableDeReparacion() {
+        // Asumimos que el nombre del rol es "Responsable de Reparacion"
+        // (Esto podría venir de una constante)
+        return "Responsable de Reparacion".equalsIgnoreCase(this.nombre);
+    }
+
     // --- Getters y Setters ---
     public String getNombre() {
         return nombre;

@@ -4,6 +4,10 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.List;
 import ppai.redsismica.dto.SismografoDTO;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Map;
+
 
 @Entity
 public class Sismografo {
@@ -20,7 +24,7 @@ public class Sismografo {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "sismografo_nro_serie")
-    private List<CambioEstado> cambioDeEstado;
+    private List<CambioEstado> cambioDeEstado = new ArrayList<>();
 
     // --- Constructores ---
     public Sismografo() {
@@ -47,16 +51,75 @@ public class Sismografo {
         return this.estacionSismologica != null;
     }
 
-    public void obtenerEstadoActual() {
-        // Lógica a implementar
+    /**
+     * 7.1.12.1.1.1: Implementación de "obtenerEstadoActual"
+     * Busca en la lista de cambios de estado cuál es el actual
+     * (el que no tiene fecha de fin).
+     */
+    public CambioEstado obtenerEstadoActual() {
+        System.out.println("Sismografo: Ejecutando 7.1.12.1.1.1 obtenerEstadoActual()...");
+        if (this.cambioDeEstado == null) {
+            return null;
+        }
+        for (CambioEstado ce : this.cambioDeEstado) {
+            if (ce.esEstadoActual()) {
+                return ce;
+            }
+        }
+        return null; // O manejar error si no se encuentra ninguno
     }
 
-    public void crearCambioEstado() {
-        // Lógica a implementar
+    /**
+     * 7.1.12.1.3: Implementación de "crearCambioEstado"
+     * Crea la nueva instancia de CambioEstado y le delega
+     * la creación de los motivos.
+     */
+    public void crearCambioEstado(
+            Estado estadoNuevo,
+            LocalDateTime fechaHora,
+            Empleado empleado,
+            List<MotivoTipo> todosLosMotivos,
+            Map<String, String> motivosConComentarios
+    ) {
+        System.out.println("Sismografo: Ejecutando 7.1.12.1.3 crearCambioEstado()...");
+
+        // 7.1.12.1.3.1: new CambioEstado()
+        // Le pasamos el empleado (RI logueado)
+        CambioEstado nuevoCambio = new CambioEstado(fechaHora, estadoNuevo, empleado);
+
+        // 8: Llama a crearMotivosFueraDeServicio
+        nuevoCambio.crearMotivosFueraDeServicio(motivosConComentarios, todosLosMotivos);
+
+        // Añadimos el nuevo estado (con sus motivos) a la lista del sismógrafo
+        this.cambioDeEstado.add(nuevoCambio);
+
+        System.out.println("Sismografo: Nuevo CambioEstado creado y añadido.");
     }
 
-    public void enviarAReparar() {
-        // Lógica a implementar
+    /**
+     * 7.1.12.1.1: Implementación de "enviarAReparar"
+     */
+    public void enviarAReparar(
+            Estado estadoSismografo,
+            LocalDateTime fechaHora,
+            Empleado empleado,
+            List<MotivoTipo> todosLosMotivos,
+            Map<String, String> motivosConComentarios
+    ) {
+        System.out.println("Sismografo: Ejecutando 7.1.12.1.1 enviarAReparar()...");
+
+        // 7.1.12.1.1.1: Llama a obtenerEstadoActual
+        CambioEstado estadoActual = this.obtenerEstadoActual();
+
+        if (estadoActual != null) {
+            // 7.1.12.1.1.2: Llama a setFechaHoraFin
+            estadoActual.setFechaHoraFin(fechaHora);
+        } else {
+            System.out.println("Sismografo: No se encontró estado actual para finalizar.");
+        }
+
+        // 7.1.12.1.3: Llama a crearCambioEstado
+        this.crearCambioEstado(estadoSismografo, fechaHora, empleado, todosLosMotivos, motivosConComentarios);
     }
 
     public void ponerFueraDeServicio() {

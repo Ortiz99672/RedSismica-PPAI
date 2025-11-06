@@ -14,6 +14,7 @@ import ppai.redsismica.dto.EmpleadoDTO;
 import ppai.redsismica.dto.OrdenInspeccionDTO;
 import ppai.redsismica.dto.DatosInicialesDTO;
 import ppai.redsismica.dto.MotivoTipoDTO;
+import ppai.redsismica.dto.NotificacionDTO;
 import java.util.List;
 
 @RestController
@@ -110,21 +111,25 @@ public class PantallaCCRS {
     }
 
     @PostMapping("/confirmar-cierre")
-    public ResponseEntity<String> tomarConfirmacion(@RequestBody boolean confirmacion) {
+    public ResponseEntity<?> tomarConfirmacion(@RequestBody boolean confirmacion) {
         System.out.println("PantallaCCRS: Recibido 7 tomarConfirmacion(): " + confirmacion);
 
         // 7.1: Llama al gestor
-        boolean esValido = gestorCierre.tomarConfirmacionCierreOrden(confirmacion);
+        // Ahora devuelve el DTO de notificación o null
+        NotificacionDTO notificacionDTO = gestorCierre.tomarConfirmacionCierreOrden(confirmacion);
 
-        if (esValido) {
+        if (notificacionDTO != null) {
             // Si la validación (7.1.1) fue exitosa
-            return ResponseEntity.ok("Orden cerrada exitosamente.");
+            // Devolvemos el DTO al frontend
+            return ResponseEntity.ok(notificacionDTO);
+
         } else {
             // Si la validación (7.1.1) falló
             // (o si el usuario envió 'false')
             if (!confirmacion) {
-                return ResponseEntity.ok("Cierre cancelado por el usuario.");
+                return ResponseEntity.ok().body("Cierre cancelado por el usuario.");
             }
+            // Error de validación
             return ResponseEntity
                     .badRequest()
                     .body("Datos insuficientes: Se requiere una observación y al menos un motivo con comentario.");
