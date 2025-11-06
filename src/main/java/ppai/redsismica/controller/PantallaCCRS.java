@@ -82,5 +82,54 @@ public class PantallaCCRS {
         return motivos;
     }
 
+    @PostMapping("/seleccionar-motivo")
+    public ResponseEntity<Void> tomarSeleccionMotivoFueraServicio(@RequestBody String motivoDescripcion) {
+        System.out.println("PantallaCCRS: Recibido 5 tomarSeleccionMotivoFueraServicio(): " + motivoDescripcion);
+
+        // 5.1: Llama al gestor para que guarde el motivo temporalmente
+        gestorCierre.tomarSeleccionMotivoFueraDeServicio(motivoDescripcion);
+
+        // 5.1.1: (solicitarIngresoComentario)
+        // Devolvemos 200 OK. React interpreta esto como "éxito,
+        // ahora habilita el campo de comentario".
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/tomar-comentario")
+    public ResponseEntity<Void> tomarIngresoComentario(@RequestBody String comentario) {
+        System.out.println("PantallaCCRS: Recibido 6 tomarIngresoComentario(): " + comentario);
+
+        // 6.1: Llama al gestor para que asocie el comentario
+        // con el motivo temporal guardado en el paso 5.
+        // (Usamos el método 'pasamanos' 6, que llama al 6.1)
+        gestorCierre.tomarComentarioIngresado(comentario);
+
+        // Devolvemos 200 OK. React puede ahora limpiar
+        // los campos y prepararse para el siguiente loop.
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/confirmar-cierre")
+    public ResponseEntity<String> tomarConfirmacion(@RequestBody boolean confirmacion) {
+        System.out.println("PantallaCCRS: Recibido 7 tomarConfirmacion(): " + confirmacion);
+
+        // 7.1: Llama al gestor
+        boolean esValido = gestorCierre.tomarConfirmacionCierreOrden(confirmacion);
+
+        if (esValido) {
+            // Si la validación (7.1.1) fue exitosa
+            return ResponseEntity.ok("Orden cerrada exitosamente.");
+        } else {
+            // Si la validación (7.1.1) falló
+            // (o si el usuario envió 'false')
+            if (!confirmacion) {
+                return ResponseEntity.ok("Cierre cancelado por el usuario.");
+            }
+            return ResponseEntity
+                    .badRequest()
+                    .body("Datos insuficientes: Se requiere una observación y al menos un motivo con comentario.");
+        }
+    }
+
 
 }

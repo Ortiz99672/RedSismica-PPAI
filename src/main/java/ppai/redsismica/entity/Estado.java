@@ -2,7 +2,7 @@ package ppai.redsismica.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import ppai.redsismica.dto.EstadoDTO; // Importar DTO
+import ppai.redsismica.dto.EstadoDTO;
 
 @Entity
 public class Estado {
@@ -23,6 +23,11 @@ public class Estado {
     // --- Métodos del diagrama (Implementados) ---
     public boolean esAmbitoOI() {
         return "OrdenInspeccion".equalsIgnoreCase(this.ambito);
+    }
+
+    public boolean esAmbitoSismografo() {
+        // Asumimos que el ámbito se llama "Sismografo"
+        return "Sismografo".equalsIgnoreCase(this.ambito);
     }
 
     public boolean esCerrada() {

@@ -2,7 +2,7 @@ package ppai.redsismica.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import ppai.redsismica.dto.OrdenInspeccionDTO; // Importar DTO
+import ppai.redsismica.dto.OrdenInspeccionDTO;
 import ppai.redsismica.dto.EstadoDTO;
 
 @Entity
@@ -101,16 +101,35 @@ public class OrdenInspeccion {
         return this.fechaHoraFinalizacion;
     }
 
+    /**
+     * 7.1.10.2: setEstado()
+     */
     public void setEstado(Estado estado) {
         this.estado = estado;
     }
 
+    /**
+     * 7.1.10.1: setFechaHoraCierre()
+     */
     public void setFechaHoraCierre(LocalDateTime fechaHoraCierre) {
         this.fechaHoraCierre = fechaHoraCierre;
     }
 
-    public void cerrar() {
-        // Lógica a implementar
+
+    /**
+     * 7.1.10: Implementación de "cerrar"
+     */
+    public void cerrar(Estado estadoCerrada, LocalDateTime fechaCierre, String observacion) {
+        System.out.println("OrdenInspeccion: Ejecutando 7.1.10 cerrar()...");
+
+        // 7.1.10.1: Llama a su propio setter
+        this.setFechaHoraCierre(fechaCierre);
+
+        // 7.1.10.2: Llama a su propio setter
+        this.setEstado(estadoCerrada);
+
+        // (Llamada implícita)
+        this.setObservacionCierre(observacion);
     }
 
     public void enviarSismografoParaReparacion() {

@@ -11,14 +11,17 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.util.Comparator;
-import ppai.redsismica.entity.MotivoTipo;
+import java.util.Map;
+import java.util.HashMap;
+
 
 // Importaciones de Entidades
 import ppai.redsismica.entity.Empleado;
-import ppai.redsismica.entity.Rol;
 import ppai.redsismica.entity.Sesion;
 import ppai.redsismica.entity.Usuario;
 import ppai.redsismica.entity.OrdenInspeccion;
+import ppai.redsismica.entity.Estado;
+import ppai.redsismica.entity.MotivoTipo;
 
 // Importaciones de DTOs
 import ppai.redsismica.dto.EmpleadoDTO;
@@ -53,6 +56,16 @@ public class GestorCierre {
     private OrdenInspeccion ordenSeleccionada;
     private String observaciones;
     private List<MotivoTipo> motivosFueraServicio;
+
+    private Map<String, String> motivosSeleccionadosConComentario = new HashMap<>();
+    private MotivoTipo motivoTemporal;
+
+    private boolean confirmacionCierreOrden;
+    private boolean datosMinimosRequeridosParaCierre;
+    private LocalDateTime fechaYHoraActual;
+
+    private Estado estadoSismografoFueraDeServicio;
+
 
 
     /**
@@ -213,42 +226,157 @@ public class GestorCierre {
         return motivosDTO;
     }
 
-    public void tomarSeleccionMotivoFueraDeServicio(Long idMotivo) {
-        System.out.println("Ejecutando tomarSeleccionMotivoFueraDeServicio...");
+    public void tomarSeleccionMotivoFueraDeServicio(String motivoDescripcion) {
+        System.out.println("GestorCierre: Ejecutando 5.1 tomarSeleccionMotivoFueraServicio(): " + motivoDescripcion);
+
+        // Busca en la lista de motivos cargados
+        this.motivoTemporal = this.motivosFueraServicio.stream()
+                .filter(m -> m.getDescripcion().equals(motivoDescripcion))
+                .findFirst()
+                .orElse(null);
+
+        if (this.motivoTemporal == null) {
+            System.out.println("Error: El motivo '" + motivoDescripcion + "' no es válido o no se encontró.");
+        } else {
+            System.out.println("Motivo temporal guardado: " + this.motivoTemporal.getDescripcion());
+            // 5.1.1: solicitarIngresoComentario() -> En React, esto es
+            // la app habilitando el campo de texto para el comentario.
+            // Aquí solo damos el OK implícito (status 200).
+        }
     }
 
-    public void tomarIngresoComentario(String comentario) {
-        System.out.println("Ejecutando tomarIngresoComentario...");
-        this.comentarios = comentario;
+    public void tomarComentarioIngresado(String comentario) {
+        System.out.println("GestorCierre: Ejecutando 6.1 tomarComentarioIngresado(): " + comentario);
+
+        if (this.motivoTemporal == null) {
+            System.out.println("Error: Se intentó guardar un comentario sin un motivo seleccionado temporalmente.");
+            return;
+        }
+
+        // Asociamos el comentario con el motivo temporal y lo guardamos en el Map
+        this.motivosSeleccionadosConComentario.put(this.motivoTemporal.getDescripcion(), comentario);
+
+        System.out.println("GestorCierre: Motivo '" + this.motivoTemporal.getDescripcion() + "' y comentario guardados. Total: " + this.motivosSeleccionadosConComentario.size());
+
+        // Limpiamos el motivo temporal, listos para el siguiente loop
+        this.motivoTemporal = null;
     }
 
-    public void tomarConfirmacionCierreOrden(boolean confirmacion) {
-        System.out.println("Ejecutando tomarConfirmacionCierreOrden...");
+    public boolean tomarConfirmacionCierreOrden(boolean confirmacion) {
+        System.out.println("GestorCierre: Ejecutando 7.1 tomarConfirmacionCierreOrden()...");
         this.confirmacionCierreOrden = confirmacion;
+
+        if (!this.confirmacionCierreOrden) {
+            System.out.println("El usuario canceló el cierre.");
+            this.finCU();
+            return false;
+        }
+
+        // 7.1.1: Llama a la validación
+        boolean esValido = this.validarDatosMinimosRequeridosParaCierreMotivos();
+
+        if (esValido) {
+            System.out.println("GestorCierre: Validación exitosa.");
+
+            // 7.1.2: Llama a buscar el estado "Cerrada"
+            Estado estadoCerrada = this.buscarEstadoCerradaParaOI();
+
+            if (estadoCerrada != null) {
+                System.out.println("GestorCierre: Búsqueda de estado 'Cerrada' completada.");
+
+                // AÑADIDO: (Paso 7.1.5)
+                this.estadoSismografoFueraDeServicio = this.buscarEstadoSismografoFueraDeServicio();
+                this.obtenerFechaYHoraActual();
+                this.cerrarOrdenInspeccion(estadoCerrada);
+
+            } else {
+                System.out.println("Error: No se pudo encontrar el estado 'Cerrada' para 'OrdenInspeccion'");
+            }
+        }
+        return esValido;
     }
 
+    /**
+     * 7.1.1: Valida los datos mínimos según la descripción del CU.
+     */
     public boolean validarDatosMinimosRequeridosParaCierreMotivos() {
-        System.out.println("Ejecutando validarDatosMinimosRequeridosParaCierreMotivos...");
-        return false;
+        System.out.println("GestorCierre: Ejecutando 7.1.1 validarDatosMinimosRequeridosParaCierreMotivos()...");
+
+        // 1. "valida que exista una observación de cierre de orden"
+        boolean observacionValida = (this.observaciones != null && !this.observaciones.trim().isEmpty());
+
+        // 2. "y al menos un motivo seleccionado"
+        boolean motivosValidos = (this.motivosSeleccionadosConComentario != null && !this.motivosSeleccionadosConComentario.isEmpty());
+
+        if (!observacionValida) System.out.println("Validación fallida: No hay observación.");
+        if (!motivosValidos) System.out.println("Validación fallida: No hay motivos seleccionados.");
+
+        this.datosMinimosRequeridosParaCierre = (observacionValida && motivosValidos);
+        return this.datosMinimosRequeridosParaCierre;
     }
 
+    /**
+     * 7.1.2: Busca el estado "Cerrada" para el ámbito "OrdenInspeccion".
+     */
     public Estado buscarEstadoCerradaParaOI() {
-        System.out.println("Ejecutando buscarEstadoCerradaParaOI...");
+        System.out.println("GestorCierre: Ejecutando 7.1.2 buscarEstadoCerradaParaOI()...");
+        List<Estado> todosLosEstados = estadoRepository.findAll();
+
+        // Loop (7.1.3 y 7.1.4)
+        for (Estado estado : todosLosEstados) {
+            if (estado.esAmbitoOI() && estado.esCerrada()) {
+                System.out.println("Estado 'Cerrada' encontrado.");
+                return estado;
+            }
+        }
+
         return null;
     }
 
     public Estado buscarEstadoSismografoFueraDeServicio() {
-        System.out.println("Ejecutando buscarEstadoSismografoFueraDeServicio...");
+        System.out.println("GestorCierre: Ejecutando 7.1.5 buscarEstadoSismografoFueraDeServicio()...");
+        List<Estado> todosLosEstados = estadoRepository.findAll();
+
+        // Loop (7.1.6 y 7.1.7)
+        for (Estado estado : todosLosEstados) {
+            // 7.1.6: esAmbitoSismografo()
+            // 7.1.7: esFueraDeServicio()
+            if (estado.esAmbitoSismografo() && estado.esFueraDeServicio()) {
+                System.out.println("Estado 'Fuera de Servicio' (Sismografo) encontrado.");
+                return estado;
+            }
+        }
+
+        System.out.println("Error: No se pudo encontrar el estado 'Fuera de Servicio' para 'Sismografo'");
         return null;
     }
 
+    /**
+     * 7.1.8: Implementación de "obtenerFechaYHoraActual"
+     */
     public void obtenerFechaYHoraActual() {
-        System.out.println("Ejecutando obtenerFechaYHoraActual...");
+        System.out.println("GestorCierre: Ejecutando 7.1.8 obtenerFechaYHoraActual()...");
         this.fechaYHoraActual = LocalDateTime.now();
     }
 
-    public void cerrarOrdenInspeccion() {
-        System.out.println("Ejecutando cerrarOrdenInspeccion...");
+    /**
+     * 7.1.9: Implementación de "cerrarOrdenInspeccion"
+     */
+    public void cerrarOrdenInspeccion(Estado estadoCerrada) {
+        System.out.println("GestorCierre: Ejecutando 7.1.9 cerrarOrdenInspeccion()...");
+
+        if (this.ordenSeleccionada == null) {
+            System.out.println("Error: No hay orden seleccionada para cerrar.");
+            return;
+        }
+
+        // 7.1.10: Delega el cierre a la propia orden
+        this.ordenSeleccionada.cerrar(estadoCerrada, this.fechaYHoraActual, this.observaciones);
+
+        // Guardamos en la base de datos
+        ordenInspeccionRepository.save(this.ordenSeleccionada);
+
+        System.out.println("Orden " + this.ordenSeleccionada.getNroOrden() + " guardada en estado 'Cerrada'.");
     }
 
     public void enviarSismografoParaReparacion() {
