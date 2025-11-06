@@ -17,7 +17,7 @@ public class CambioEstado {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "cambio_estado_fecha_inicio") // Columna en MotivoFueraServicio
-    private List<MotivoFueraServicio> motivosFueraServicio = new ArrayList<>();
+    private List<MotivoFueraDeServicio> motivosFueraServicio = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "estado_nombre")
@@ -100,11 +100,11 @@ public class CambioEstado {
         this.fechaHoraFin = fechaHoraFin;
     }
 
-    public List<MotivoFueraServicio> getMotivosFueraServicio() {
+    public List<MotivoFueraDeServicio> getMotivosFueraServicio() {
         return motivosFueraServicio;
     }
 
-    public void setMotivosFueraServicio(List<MotivoFueraServicio> motivos) {
+    public void setMotivosFueraServicio(List<MotivoFueraDeServicio> motivos) {
         this.motivosFueraServicio = motivos;
     }
 
