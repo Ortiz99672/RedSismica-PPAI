@@ -2,6 +2,7 @@ package ppai.redsismica.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import ppai.redsismica.dto.RolDTO;
 
 @Entity
 public class Rol {
@@ -17,6 +18,14 @@ public class Rol {
     public Rol(String nombre, String descripcion) {
         this.nombre = nombre;
         this.descripcion = descripcion;
+    }
+
+    // --- NUEVO MÉTODO DE MAPEO ---
+    /**
+     * Se mapea a sí mismo a un DTO.
+     */
+    public RolDTO mapearADTO() {
+        return new RolDTO(this.nombre, this.descripcion);
     }
 
     // --- Getters y Setters ---

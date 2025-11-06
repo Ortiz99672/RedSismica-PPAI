@@ -2,29 +2,22 @@ package ppai.redsismica.dto;
 
 /**
  * DTO para Rol.
- * Contiene los datos públicos de un rol.
+ * (Basado en la definición previa)
  */
 public class RolDTO {
 
     private String nombre;
     private String descripcion;
 
-    /**
-     * Constructor vacío.
-     */
     public RolDTO() {
     }
 
-    /**
-     * Constructor completo para facilitar el mapeo.
-     */
     public RolDTO(String nombre, String descripcion) {
         this.nombre = nombre;
         this.descripcion = descripcion;
     }
 
-    // --- Getters y Setters Manuales ---
-
+    // --- Getters y Setters ---
     public String getNombre() {
         return nombre;
     }

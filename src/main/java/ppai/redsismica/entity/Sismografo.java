@@ -3,6 +3,7 @@ package ppai.redsismica.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.List;
+import ppai.redsismica.dto.SismografoDTO;
 
 @Entity
 public class Sismografo {
@@ -37,9 +38,13 @@ public class Sismografo {
         return this.identificadorSismografo;
     }
 
+    /**
+     * Implementa 1.2.6.3: sosDeEstacionSismologica()
+     * (El diagrama está un poco confuso aquí, pero asumimos
+     * que solo verifica que pertenece a una estación)
+     */
     public boolean sosDeEstacionSismologica() {
-        // Lógica a implementar
-        return false;
+        return this.estacionSismologica != null;
     }
 
     public void obtenerEstadoActual() {
@@ -59,8 +64,14 @@ public class Sismografo {
     }
 
     public boolean esEstadoActual() {
-        // Lógica a implementar
-        return false;
+        // Lógica futura
+        System.out.println("Sismografo: STUB - esEstadoActual()");
+        return true;
+    }
+
+    // --- Método de Mapeo ---
+    public SismografoDTO mapearADTO() {
+        return new SismografoDTO(this.nroSerie, this.identificadorSismografo);
     }
 
     // --- Getters y Setters adicionales ---

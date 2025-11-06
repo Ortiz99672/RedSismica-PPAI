@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
+import ppai.redsismica.dto.MotivoTipoDTO;
 
 
 /**
@@ -27,6 +28,11 @@ public class MotivoTipo {
 
     public String getDescripcion() {
         return descripcion;
+    }
+
+    // --- Método de Mapeo ---
+    public MotivoTipoDTO mapearADTO() {
+        return new MotivoTipoDTO(this.descripcion);
     }
 
     /**

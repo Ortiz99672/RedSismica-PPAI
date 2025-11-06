@@ -2,6 +2,8 @@ package ppai.redsismica.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import ppai.redsismica.dto.OrdenInspeccionDTO; // Importar DTO
+import ppai.redsismica.dto.EstadoDTO;
 
 @Entity
 public class OrdenInspeccion {
@@ -39,16 +41,56 @@ public class OrdenInspeccion {
     }
 
     // --- Métodos del diagrama ---
+    /**
+     * Implementa 1.2.4: esDeEmpleado()
+     */
     public boolean esDeEmpleado(Empleado empleado) {
-        return this.empleado != null && this.empleado.getMail().equals(empleado.getMail());
+        // Comparamos por el mail (PK de Empleado)
+        return this.empleado != null &&
+                empleado != null &&
+                this.empleado.getMail().equals(empleado.getMail());
     }
 
+    /**
+     * Implementa 1.2.5: sosEstadoCompletamenteRealizado()
+     */
     public boolean sosEstadoCompletamenteRealizado() {
+        // 1.2.5.1: Delega la lógica al estado
         return this.estado != null && this.estado.esCompletamenteRealizada();
     }
 
-    public void mostrarDatosOrden() {
-        // Lógica a implementar
+    /**
+     * Implementa 1.2.6: mostrarDatosOrden()
+     * El "mostrar" en el backend se traduce a "recolectar
+     * datos y devolver un DTO".
+     */
+    public OrdenInspeccionDTO mapearADTO() {
+        String nombreEstacion = null;
+        String idSismografo = null;
+
+        if (this.estacionSismologica != null) {
+            // 1.2.6.1: getNombre()
+            nombreEstacion = this.estacionSismologica.getNombre();
+
+            // 1.2.6.2: obtenerSismografo()
+            Sismografo sismografo = this.estacionSismologica.getSismografo();
+
+            if (sismografo != null) {
+                // 1.2.6.3: (Llamada implícita)
+                sismografo.sosDeEstacionSismologica(); // (Solo validación)
+
+                // 1.2.6.3.2: getIdentificadorSismografo()
+                idSismografo = sismografo.getIdentificadorSismografo();
+            }
+        }
+
+        // 1.2.6.4: getNroOrden() (es this.nroOrden)
+        // 1.2.6.5: getFechaFinalizacion()
+        LocalDateTime fechaFin = getFechaFinalizacion();
+
+        EstadoDTO estadoDTO = (this.estado != null) ? this.estado.mapearADTO() : null;
+
+        return new OrdenInspeccionDTO(this.nroOrden, fechaFin, nombreEstacion, idSismografo, estadoDTO);
     }
 
     public Integer getNroOrden() {
@@ -72,7 +114,10 @@ public class OrdenInspeccion {
     }
 
     public void enviarSismografoParaReparacion() {
-        // Lógica a implementar
+        if(this.estacionSismologica != null) {
+            this.estacionSismologica.ponerSismografoFueraDeServicio(); // O lógica similar
+        }
+        System.out.println("OrdenInspeccion: STUB - enviarSismografoParaReparacion()");
     }
 
     // --- Getters y Setters adicionales ---

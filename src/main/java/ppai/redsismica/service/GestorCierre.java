@@ -8,27 +8,29 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+import java.util.Comparator;
+import ppai.redsismica.entity.MotivoTipo;
 
 // Importaciones de Entidades
 import ppai.redsismica.entity.Empleado;
 import ppai.redsismica.entity.Rol;
 import ppai.redsismica.entity.Sesion;
 import ppai.redsismica.entity.Usuario;
+import ppai.redsismica.entity.OrdenInspeccion;
 
 // Importaciones de DTOs
 import ppai.redsismica.dto.EmpleadoDTO;
-import ppai.redsismica.dto.RolDTO;
+import ppai.redsismica.dto.OrdenInspeccionDTO;
+import ppai.redsismica.dto.MotivoTipoDTO;
 
 // Importaciones de Repositorios
 import ppai.redsismica.repository.SesionRepository;
-// Asumo que tienes los otros repositorios y entidades en sus paquetes
-// import ppai.redsismica.repository.EmpleadoRepository;
-// import ppai.redsismica.repository.RolRepository;
-// import ppai.redsismica.model.Orden;
-// import ppai.redsismica.model.MotivoFS;
-// import ppai.redsismica.model.Estado;
-// import ppai.redsismica.model.Sismografo;
-// import ppai.redsismica.model.Monitor;
+import ppai.redsismica.repository.OrdenInspeccionRepository;
+import ppai.redsismica.repository.EstadoRepository;
+import ppai.redsismica.repository.MotivoTipoRepository;
+
 
 
 @Service
@@ -38,26 +40,38 @@ public class GestorCierre {
 
     // --- 1. Dependencias (Inyectadas por Spring) ---
     private final SesionRepository sesionRepository;
-    // private final EmpleadoRepository empleadoRepository; // Necesarios si Empleado/Rol no son EAGER
-    // private final RolRepository rolRepository;
-    // private final OrdenRepository ordenRepository;
-    // private final SismografoRepository sismografoRepository;
-    // private final NotificacionService notificacionService;
+    private final OrdenInspeccionRepository ordenInspeccionRepository;
+    private final EstadoRepository estadoRepository;
+    private final MotivoTipoRepository motivoTipoRepository;
+
 
     // --- 2. Atributos de Estado (del diagrama) ---
     private EmpleadoDTO responsableInspeccionLogueado;
-
-    // private List<Orden> ordenes;
-    // ... (resto de atributos)
+    private Sesion sesionActual;
+    private Empleado empleadoLogueado;
+    private List<OrdenInspeccionDTO> ordenesParaMostrar;
+    private OrdenInspeccion ordenSeleccionada;
+    private String observaciones;
+    private List<MotivoTipo> motivosFueraServicio;
 
 
     /**
      * El constructor recibe las dependencias de Spring.
      */
     @Autowired
-    public GestorCierre(SesionRepository sesionRepository
-            /* , EmpleadoRepository empleadoRepo, RolRepository rolRepo ... */ ) {
-        Sesion sesionActual = sesionRepository.findFirstByFechaHoraHastaIsNull();
+    public GestorCierre(SesionRepository sesionRepository, OrdenInspeccionRepository ordenInspeccionRepository,
+                        EstadoRepository estadoRepository, MotivoTipoRepository motivoTipoRepository) {
+        this.sesionRepository = sesionRepository;
+        this.ordenInspeccionRepository = ordenInspeccionRepository;
+        this.estadoRepository = estadoRepository;
+        this.motivoTipoRepository = motivoTipoRepository;
+        this.sesionActual = sesionRepository.findFirstByFechaHoraHastaIsNull();
+        if (this.sesionActual == null) {
+            System.out.println("--- ADVERTENCIA: No se encontró sesión activa al crear GestorCierre ---");
+        } else {
+            System.out.println("--- GestorCierre creado para la sesión del usuario: " + this.sesionActual.getUsuario().getNombreUsuario() + " ---");
+        }
+
         // this.empleadoRepository = empleadoRepo;
         // this.rolRepository = rolRepo;
         System.out.println("--- Se ha creado un NUEVO GestorCierre para la sesión ---");
@@ -72,11 +86,10 @@ public class GestorCierre {
     public void opcionCierreDeInscripcion() {
         System.out.println("GestorCierre: Recibida opcionCierreDeInscripcion()");
 
-        // 1.2.1: Llama al método wrapper
-        this.buscarRILogueado();
 
-        // 1.2.3: Llama al siguiente método de la secuencia
+        this.buscarRILogueado();
         this.buscarOrdenes();
+        this.ordenarOrdenes();
     }
 
     /**
@@ -86,10 +99,11 @@ public class GestorCierre {
     public void buscarRILogueado() {
         System.out.println("GestorCierre: Ejecutando buscarRILogueado()...");
 
-        if (sesionActual != null) {
+        // 1. Usamos la sesión que ya cargamos en el constructor
+        if (this.sesionActual != null) {
 
             // 2. (1.2.2) El gestor le pide el usuario a la sesión ("obtenerUsuario")
-            Usuario usuarioLogueado = sesionActual.getUsuario();
+            Usuario usuarioLogueado = this.sesionActual.getUsuario();
 
             if (usuarioLogueado != null) {
 
@@ -97,8 +111,9 @@ public class GestorCierre {
                 Empleado empleadoLogueado = usuarioLogueado.getEmpleado();
 
                 if (empleadoLogueado != null) {
-                    // 4. Mapeamos la Entidad a DTO y la guardamos en el estado del Gestor
-                    this.responsableInspeccionLogueado = mapearEmpleadoADTO(empleadoLogueado);
+                    // --- CORRECCIÓN 2: Delegamos el mapeo a la entidad Empleado ---
+                    this.responsableInspeccionLogueado = empleadoLogueado.mapearADTO(); // ¡Correcto!
+
                     System.out.println("RI Logueado encontrado: " + this.responsableInspeccionLogueado.getNombre());
                 } else {
                     System.out.println("Error: Usuario no tiene empleado asociado.");
@@ -107,34 +122,95 @@ public class GestorCierre {
                 System.out.println("Error: Sesión no tiene usuario asociado.");
             }
         } else {
-            System.out.println("Error: No se encontró sesión activa.");
+            System.out.println("Error: No se encontró sesión activa (cargada en el constructor).");
         }
     }
 
     /**
-     * 1.2.3: Siguiente paso en la secuencia (aún vacío).
+     * 1.2.3: Implementa la búsqueda y filtrado de órdenes.
      */
     public void buscarOrdenes() {
         System.out.println("GestorCierre: Ejecutando buscarOrdenes()...");
-        // Lógica futura para buscar órdenes...
-        // Setea 'this.ordenes'
+        if (this.empleadoLogueado == null) {
+            System.out.println("GestorCierre: No se puede buscar órdenes si no hay un empleado logueado.");
+            this.ordenesParaMostrar = new ArrayList<>();
+            return;
+        }
+
+        // 1. Buscamos TODAS las órdenes (se puede optimizar)
+        List<OrdenInspeccion> todasLasOrdenes = ordenInspeccionRepository.findAll();
+
+        // 2. Iniciamos el loop de filtrado
+        this.ordenesParaMostrar = todasLasOrdenes.stream()
+                // 1.2.4: esDeEmpleado(RI)
+                .filter(orden -> orden.esDeEmpleado(this.empleadoLogueado))
+                // 1.2.5: sosEstadoCompletamenteRealizado()
+                .filter(orden -> orden.sosEstadoCompletamenteRealizado())
+                // 1.2.6: mostrarDatosOrden() (convertimos a DTO)
+                .map(orden -> orden.mapearADTO())
+                .collect(Collectors.toList());
+
+        System.out.println("GestorCierre: Se encontraron " + this.ordenesParaMostrar.size() + " órdenes válidas para mostrar.");
     }
+
 
     public void ordenarOrdenes() {
-        System.out.println("Ejecutando ordenarOrdenes...");
+        System.out.println("GestorCierre: Ejecutando ordenarOrdenes()...");
+        if (this.ordenesParaMostrar != null) {
+            // Ordenamos por fecha de finalización, de más reciente a más antigua (descendente)
+            this.ordenesParaMostrar.sort(Comparator.comparing(
+                    OrdenInspeccionDTO::getFechaHoraFinalizacion,
+                    Comparator.nullsLast(Comparator.reverseOrder()) // Maneja nulos y ordena descendente
+            ));
+        }
     }
 
-    public void tomarSeleccionOrden(Long idOrden) {
-        System.out.println("Ejecutando tomarSeleccionOrden...");
+    public void tomarSeleccionOrden(Integer nroOrden) {
+        System.out.println("GestorCierre: Ejecutando tomarSeleccionOrden() para Nro: " + nroOrden);
+        // Buscamos la *entidad* completa y la guardamos en estado
+        this.ordenSeleccionada = ordenInspeccionRepository.findById(nroOrden).orElse(null);
+
+        if (this.ordenSeleccionada == null) {
+            System.out.println("Error: No se encontró la entidad Orden " + nroOrden);
+        } else {
+            System.out.println("Orden seleccionada: " + this.ordenSeleccionada.getNroOrden());
+        }
     }
 
-    public void tomarObservacion(String observacion) {
-        System.out.println("Ejecutando tomarObservacion...");
+    /**
+     * 4: El usuario ingresa la observación.
+     * El controlador llama a este método.
+     * Este método, además, inicia la búsqueda de Motivos (Paso 4.1.2)
+     * y devuelve la lista de motivos al controlador.
+     */
+    public List<MotivoTipoDTO> tomarObservacion(String observacion) {
+        System.out.println("GestorCierre: Ejecutando tomarObservacion(): " + observacion);
         this.observaciones = observacion;
+
+        // El diagrama indica que "pedirObservacion" (4.1.1)
+        // dispara "buscarMotivoFS" (4.1.2)
+        return this.buscarMotivoFS();
     }
 
-    public void buscarMotivoFS() {
-        System.out.println("Ejecutando buscarMotivoFS...");
+    /**
+     * 4.1.2: Busca los Motivos de Fuera de Servicio.
+     */
+    public List<MotivoTipoDTO> buscarMotivoFS() {
+        System.out.println("GestorCierre: Ejecutando buscarMotivoFS()...");
+
+        // 1. Buscamos las entidades
+        this.motivosFueraServicio = motivoTipoRepository.findAll();
+
+        // 2. Mapeamos a DTO (4.1.2.1: getDescripcion es llamado por mapearADTO)
+        List<MotivoTipoDTO> motivosDTO = this.motivosFueraServicio.stream()
+                .map(motivo -> motivo.mapearADTO())
+                .collect(Collectors.toList());
+
+        System.out.println("Se encontraron " + motivosDTO.size() + " motivos.");
+
+        // 3. Devolvemos la lista de DTOs para que el
+        // controlador (Pantalla) se la muestre al usuario
+        return motivosDTO;
     }
 
     public void tomarSeleccionMotivoFueraDeServicio(Long idMotivo) {
@@ -200,27 +276,16 @@ public class GestorCierre {
         // this.observaciones = null;
     }
 
-
-    // --- Métodos Helper (Privados) ---
-
-    /**
-     * Convierte la entidad Empleado a EmpleadoDTO.
-     */
-    private EmpleadoDTO mapearEmpleadoADTO(Empleado entidad) {
-        if (entidad == null) return null;
-
-        RolDTO rolDTO = null;
-        if (entidad.getRol() != null) {
-            Rol rolEntidad = entidad.getRol(); // Asumimos carga EAGER o sesión abierta
-            rolDTO = new RolDTO(rolEntidad.getNombre(), rolEntidad.getDescripcion());
-        }
-
-        return new EmpleadoDTO(
-                entidad.getMail(),
-                entidad.getApellido(),
-                entidad.getNombre(),
-                entidad.getTelefono(),
-                rolDTO
-        );
+    // --- Getters para el Controlador ---
+    public EmpleadoDTO getResponsableInspeccionLogueado() {
+        return this.responsableInspeccionLogueado;
     }
+
+    public List<OrdenInspeccionDTO> getOrdenesParaMostrar() {
+        return this.ordenesParaMostrar;
+    }
+
+
+
+
 }

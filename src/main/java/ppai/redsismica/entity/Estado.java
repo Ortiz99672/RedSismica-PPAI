@@ -2,6 +2,7 @@ package ppai.redsismica.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import ppai.redsismica.dto.EstadoDTO; // Importar DTO
 
 @Entity
 public class Estado {
@@ -19,41 +20,37 @@ public class Estado {
         this.ambito = ambito;
     }
 
-    // --- Métodos del diagrama ---
+    // --- Métodos del diagrama (Implementados) ---
     public boolean esAmbitoOI() {
-        // Lógica a implementar
         return "OrdenInspeccion".equalsIgnoreCase(this.ambito);
     }
 
     public boolean esCerrada() {
-        // Lógica a implementar
         return "Cerrada".equalsIgnoreCase(this.nombreEstado);
     }
 
     public boolean esFueraDeServicio() {
-        // Lógica a implementar
         return "Fuera de Servicio".equalsIgnoreCase(this.nombreEstado);
     }
 
+    /**
+     * Implementa la lógica de 1.2.5.1: esCRI()
+     */
     public boolean esCompletamenteRealizada() {
-        // Lógica a implementar
         return "Completamente Realizada".equalsIgnoreCase(this.nombreEstado);
+    }
+
+    // --- Método de Mapeo ---
+    public EstadoDTO mapearADTO() {
+        return new EstadoDTO(this.nombreEstado, this.ambito);
     }
 
     // --- Getters y Setters ---
     public String getNombreEstado() {
         return nombreEstado;
     }
-
-    public void setNombreEstado(String nombreEstado) {
-        this.nombreEstado = nombreEstado;
-    }
-
-    public String getAmbito() {
-        return ambito;
-    }
-
-    public void setAmbito(String ambito) {
-        this.ambito = ambito;
-    }
+    // ... (resto de getters/setters)
+    public void setNombreEstado(String nombreEstado) { this.nombreEstado = nombreEstado; }
+    public String getAmbito() { return ambito; }
+    public void setAmbito(String ambito) { this.ambito = ambito; }
 }

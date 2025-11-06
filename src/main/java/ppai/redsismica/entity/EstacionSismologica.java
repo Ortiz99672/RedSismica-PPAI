@@ -6,7 +6,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import java.time.LocalDate;
 import java.util.List;
-import ppai.redsismica.entity.Sismografo;
+import ppai.redsismica.dto.EstacionSismologicaDTO;
+import ppai.redsismica.dto.SismografoDTO;
 
 @Entity
 public class EstacionSismologica {
@@ -43,12 +44,29 @@ public class EstacionSismologica {
         return this.nombre;
     }
 
-    public void obtenerIdSismografo() {
-        // Lógica a implementar
+    public String obtenerIdSismografo() {
+        if (this.sismografo != null) {
+            return this.sismografo.getNroSerie();
+        }
+        return null;
     }
 
     public void ponerSismografoFueraDeServicio() {
-        // Lógica a implementar
+        if (this.sismografo != null) {
+            this.sismografo.ponerFueraDeServicio();
+        } else {
+            System.out.println("EstacionSismologica: No hay sismógrafo para poner fuera de servicio.");
+        }
+    }
+
+    // --- Método de Mapeo ---
+    public EstacionSismologicaDTO mapearADTO() {
+        SismografoDTO sismografoDTO = null;
+        if (this.sismografo != null) {
+            // Delegamos el mapeo al sismógrafo
+            sismografoDTO = this.sismografo.mapearADTO();
+        }
+        return new EstacionSismologicaDTO(this.codigoEstacion, this.nombre, sismografoDTO);
     }
 
     // --- Getters y Setters adicionales ---

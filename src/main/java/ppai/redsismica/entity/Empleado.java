@@ -4,6 +4,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import ppai.redsismica.dto.EmpleadoDTO;
+import ppai.redsismica.dto.RolDTO;
 
 @Entity
 public class Empleado {
@@ -29,6 +31,25 @@ public class Empleado {
         this.nombre = nombre;
         this.telefono = telefono;
         this.rol = rol;
+    }
+
+    // --- NUEVO MÉTODO DE MAPEO ---
+    /**
+     * Se mapea a sí mismo a un DTO, delegando el mapeo de Rol.
+     */
+    public EmpleadoDTO mapearADTO() {
+        RolDTO rolDTO = null;
+        if (this.rol != null) {
+            rolDTO = this.rol.mapearADTO(); // Delega la responsabilidad a Rol
+        }
+
+        return new EmpleadoDTO(
+                this.mail,
+                this.apellido,
+                this.nombre,
+                this.telefono,
+                rolDTO
+        );
     }
 
     // --- Métodos del diagrama ---
