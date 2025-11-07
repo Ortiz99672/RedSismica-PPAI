@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="b1615277-7409-41ae-bef6-73eb5ae3fcf0" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/ppai/redsismica/config/WebConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/orden-inspeccion/src/pages/PantallaCierre.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitattributes" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.mvn/wrapper/maven-wrapper.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mvnw" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mvnw.cmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/RedSismicaApplication.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/controller/InterfazNotificaciones.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/controller/PantallaCCRS.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/dto/DatosInicialesDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/dto/EmpleadoDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/dto/EstacionSismologicaDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/dto/EstadoDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/dto/MotivoTipoDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/dto/NotificacionDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/dto/OrdenInspeccionDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/dto/RolDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/dto/SesionDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/dto/SismografoDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/dto/UsuarioDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/entity/CambioEstado.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/entity/Empleado.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/entity/EstacionSismologica.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/entity/Estado.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/entity/MotivoFueraDeServicio.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/entity/MotivoTipo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/entity/OrdenInspeccion.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/entity/Rol.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/entity/Sesion.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/entity/Sismografo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/entity/Usuario.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/repository/EmpleadoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/repository/EstadoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/repository/MotivoTipoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/repository/OrdenInspeccionRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/repository/SesionRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ppai/redsismica/service/GestorCierre.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/data.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/schema.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/ppai/redsismica/RedSismicaApplicationTests.java" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Ortiz99672&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Ortiz99672/RedSismica-PPAI.git&quot;,
+    &quot;accountId&quot;: &quot;68ccd0cf-00a0-4484-8f8c-d4bda78e3c13&quot;
+  }
+}</component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="35AJwJBGjyltd6aznDMfO3iEeqZ" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RunManager">
+    <configuration name="RedSismicaApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="RedSismica" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="ppai.redsismica.RedSismicaApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.25557.131" />
+        <option value="bundled-js-predefined-d6986cc7102b-b598e85cdad2-JavaScript-IU-252.25557.131" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b1615277-7409-41ae-bef6-73eb5ae3fcf0" name="Changes" comment="" />
+      <created>1762547180759</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1762547180759</updated>
+      <workItem from="1762547183064" duration="5904000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
