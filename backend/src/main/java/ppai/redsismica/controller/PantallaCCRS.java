@@ -182,6 +182,7 @@ public class PantallaCCRS implements IObservador {
     @Override
     public void actualizar(NotificacionDTO notificacion) { // ¡NUEVA FIRMA!
         // Almacenamos los datos para que el frontend los pueda mostrar.
+        // ACTUALIZACION EN TODAS LAS PANTALLAS SIMULADA
         this.setIdSismografo(notificacion.getIdentificadorSismografo());
         this.setEstado(notificacion.getNombreEstado());
         this.setFecha(notificacion.getFechaHora().toLocalDate());

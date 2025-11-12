@@ -1,6 +1,7 @@
 package ppai.redsismica.controller;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -42,26 +43,49 @@ public class InterfazNotificaciones implements IObservador {
     }
 
     @Override
-    public void actualizar(NotificacionDTO notificacion) { // ¡NUEVA FIRMA!
-        System.out.println("InterfazNotificaciones: Recibida actualizacion para enviar correo.");
+    public void actualizar(NotificacionDTO notificacion) {
+        System.out.println("InterfazNotificaciones: Recibida actualización para enviar correo.");
+
         // Obtiene la lista de mails del DTO
-        List<String> destinatarios = notificacion.getDestinatarios(); 
+        List<String> destinatarios = notificacion.getDestinatarios();
 
         for (String destinatario : destinatarios) {
-            System.out.println(">>> (STUB) Enviando mail a: " + destinatario);
-            enviarMail(notificacion);
+            enviarMail(destinatario, notificacion);
         }
     }
 
-    public void enviarMail(NotificacionDTO notificacion) {
+    public void enviarMail(String destinatario, NotificacionDTO notificacion) {
 
-        // Logica para construir y enviar el correo electronico.
+        String identificadorSismografo = notificacion.getIdentificadorSismografo();
+        String nombreEstado = notificacion.getNombreEstado();
+        LocalDateTime fechaHora = notificacion.getFechaHora();
+        Map<String, String> motivos = notificacion.getMotivos();
 
-        // FALTA ESTOOOOOO
+        // Construimos el mensaje
+        StringBuilder mensaje = new StringBuilder();
+        mensaje.append("Asunto: Alerta del Sismógrafo ").append(identificadorSismografo).append("\n\n");
+        mensaje.append("Estimado/a,\n\n");
+        mensaje.append("Se ha detectado un cambio en el estado del sismógrafo.\n\n");
+        mensaje.append("Detalles:\n");
+        mensaje.append(" - Sismógrafo: ").append(identificadorSismografo).append("\n");
+        mensaje.append(" - Nuevo estado: ").append(nombreEstado).append("\n");
+        mensaje.append(" - Fecha y hora: ").append(fechaHora).append("\n");
+        mensaje.append(" - Motivos:\n");
 
-        System.out.println("    Sismografo: " + notificacion.getIdentificadorSismografo());
-        System.out.println("    Nuevo Estado: " + notificacion.getNombreEstado());
-        System.out.println("    Fecha y Hora: " + notificacion.getFechaHora());
-        System.out.println("    Motivos: " + notificacion.getMotivos());
+        if (motivos != null && !motivos.isEmpty()) {
+            for (Map.Entry<String, String> entry : motivos.entrySet()) {
+                mensaje.append("     • ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            }
+        } else {
+            mensaje.append("     (Sin motivos registrados)\n");
+        }
+
+        mensaje.append("\nSaludos,\nSistema de Monitoreo Sísmico");
+
+        // Por ahora, simulamos el envío
+        System.out.println(">>> (STUB) Enviando mail a: " + destinatario);
+        System.out.println("------------------------------------------");
+        System.out.println(mensaje);
+        System.out.println("------------------------------------------");
     }
 }
