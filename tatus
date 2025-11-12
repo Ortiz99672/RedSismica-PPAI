@@ -1,0 +1,80 @@
+[1mdiff --git a/backend/src/main/java/ppai/redsismica/controller/PantallaCCRS.java b/backend/src/main/java/ppai/redsismica/controller/PantallaCCRS.java[m
+[1mindex b5dcf5a..ca33878 100644[m
+[1m--- a/backend/src/main/java/ppai/redsismica/controller/PantallaCCRS.java[m
+[1m+++ b/backend/src/main/java/ppai/redsismica/controller/PantallaCCRS.java[m
+[36m@@ -13,7 +13,10 @@[m [mimport org.springframework.web.bind.annotation.RequestMapping;[m
+ import org.springframework.web.bind.annotation.RequestParam;[m
+ import org.springframework.web.bind.annotation.RestController;[m
+ [m
+[32m+[m[32m<<<<<<< HEAD[m
+ import ppai.redsismica.dto.ConfirmacionDTO;[m
+[32m+[m[32m=======[m
+[32m+[m[32m>>>>>>> 5d2f122bd33a050a481d1e0465d0a932942b75c6[m
+ import ppai.redsismica.dto.DatosInicialesDTO;[m
+ import ppai.redsismica.dto.EmpleadoDTO;[m
+ import ppai.redsismica.dto.MotivoTipoDTO;[m
+[36m@@ -146,6 +149,7 @@[m [mpublic class PantallaCCRS implements IObservador {[m
+ [m
+     /**[m
+      * Endpoint final para confirmar el cierre de la orden.[m
+[32m+[m[32m<<<<<<< HEAD[m
+      * @param confirmacionDTO DTO con el campo confirmacion (true/false).[m
+      * @return NotificacionDTO si el cierre es exitoso, o mensaje de error/cancelación.[m
+      */[m
+[36m@@ -155,6 +159,25 @@[m [mpublic class PantallaCCRS implements IObservador {[m
+             if (confirmacionDTO == null || confirmacionDTO.getConfirmacion() == null) {[m
+                 // También aceptamos un boolean directo como fallback[m
+                 return ResponseEntity.badRequest().body("El campo 'confirmacion' es requerido.");[m
+[32m+[m[32m=======[m
+[32m+[m[32m     * @param confirmacion true si el usuario confirma, false si cancela.[m
+[32m+[m[32m     * @return NotificacionDTO si el cierre es exitoso, o mensaje de error/cancelación.[m
+[32m+[m[32m     */[m
+[32m+[m[32m    @PostMapping("/confirmar-cierre")[m
+[32m+[m[32m    public ResponseEntity<?> tomarConfirmacion(@RequestBody boolean confirmacion) {[m
+[32m+[m[32m        System.out.println("PantallaCCRS: Recibido tomarConfirmacion(): " + confirmacion);[m
+[32m+[m
+[32m+[m[32m        NotificacionDTO notificacionDTO = gestorCierre.tomarConfirmacionCierreOrden(confirmacion);[m
+[32m+[m
+[32m+[m[32m        if (notificacionDTO != null) {[m
+[32m+[m[32m            // Cierre exitoso: el DTO se devuelve al frontend para confirmación visual[m
+[32m+[m[32m            return ResponseEntity.ok(notificacionDTO);[m
+[32m+[m
+[32m+[m[32m        } else {[m
+[32m+[m[32m            // Lógica de cancelación o error de validación[m
+[32m+[m[32m            if (!confirmacion) {[m
+[32m+[m[32m                return ResponseEntity.ok().body("Cierre cancelado por el usuario.");[m
+[32m+[m[32m>>>>>>> 5d2f122bd33a050a481d1e0465d0a932942b75c6[m
+             }[m
+ [m
+             Boolean confirmacion = confirmacionDTO.getConfirmacion();[m
+[36m@@ -188,6 +211,7 @@[m [mpublic class PantallaCCRS implements IObservador {[m
+     // --- Implementación del Patrón Observer (IObservador) ---[m
+ [m
+     /**[m
+[32m+[m[32m<<<<<<< HEAD[m
+      * Endpoint para obtener el estado actualizado de la notificación.[m
+      * Permite al frontend consultar los datos después de que se haya notificado.[m
+      * @return NotificacionDTO con los datos actualizados, o null si no hay datos.[m
+[36m@@ -216,13 +240,22 @@[m [mpublic class PantallaCCRS implements IObservador {[m
+     }[m
+ [m
+     /**[m
+[32m+[m[32m=======[m
+[32m+[m[32m>>>>>>> 5d2f122bd33a050a481d1e0465d0a932942b75c6[m
+      * Implementación del método de la interfaz IObservador.[m
+      * Lógica para "publicar en monitores" (STUB).[m
+      *[m
+      * @param notificacion DTO con los detalles del sismógrafo.[m
+[32m+[m[32m<<<<<<< HEAD[m
+      */[m
+     @Override[m
+     public void actualizar(NotificacionDTO notificacion) {[m
+[32m+[m[32m=======[m
+[32m+[m[32m     * @param destinatarios Lista de correos (no usada por la pantalla, pero requerida por la interfaz).[m
+[32m+[m[32m     */[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public void actualizar(NotificacionDTO notificacion) { // ¡NUEVA FIRMA![m
+[32m+[m[32m>>>>>>> 5d2f122bd33a050a481d1e0465d0a932942b75c6[m
+         // Almacenamos los datos para que el frontend los pueda mostrar.[m
+         // ACTUALIZACION EN TODAS LAS PANTALLAS SIMULADA[m
+         this.setIdSismografo(notificacion.getIdentificadorSismografo());[m
