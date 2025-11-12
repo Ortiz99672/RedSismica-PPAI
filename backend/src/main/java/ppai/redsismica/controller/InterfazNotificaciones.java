@@ -1,12 +1,13 @@
 package ppai.redsismica.controller;
 
-import org.springframework.stereotype.Component;
-import ppai.redsismica.dto.NotificacionDTO;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.stereotype.Component;
+
+import ppai.redsismica.dto.NotificacionDTO;
 
 @Component
 public class InterfazNotificaciones implements IObservador {
@@ -42,27 +43,49 @@ public class InterfazNotificaciones implements IObservador {
     }
 
     @Override
-    public void actualizar(NotificacionDTO notificacion, List<String> destinatarios) {
-        System.out.println("InterfazNotificaciones: Recibida actualizaciÛn para enviar correo.");
-        for (String destinatario : destinatarios) {
-            System.out.println(">>> (STUB) Enviando mail a: " + destinatario);
-            enviarMail(notificacion);
-        }
+    public void actualizar(NotificacionDTO notificacion) {
+        System.out.println("InterfazNotificaciones: Recibida actualizaci√≥n para enviar correo.");
 
+        // Obtiene la lista de mails del DTO
+        List<String> destinatarios = notificacion.getDestinatarios();
+
+        for (String destinatario : destinatarios) {
+            enviarMail(destinatario, notificacion);
+        }
     }
 
-    public void enviarMail(NotificacionDTO notificacion) {
+    public void enviarMail(String destinatario, NotificacionDTO notificacion) {
 
-        // LÛgica para construir y enviar el correo electrÛnico.
-        this.setIdSismografo(notificacion.getIdentificadorSismografo());
-        this.setEstado(notificacion.getNombreEstado());
-        this.setFecha(notificacion.getFechaHora().toLocalDate());
-        this.setMotivos(notificacion.getMotivos());
+        String identificadorSismografo = notificacion.getIdentificadorSismografo();
+        String nombreEstado = notificacion.getNombreEstado();
+        LocalDateTime fechaHora = notificacion.getFechaHora();
+        Map<String, String> motivos = notificacion.getMotivos();
 
+        // Construimos el mensaje
+        StringBuilder mensaje = new StringBuilder();
+        mensaje.append("Asunto: Alerta del Sism√≥grafo ").append(identificadorSismografo).append("\n\n");
+        mensaje.append("Estimado/a,\n\n");
+        mensaje.append("Se ha detectado un cambio en el estado del sism√≥grafo.\n\n");
+        mensaje.append("Detalles:\n");
+        mensaje.append(" - Sism√≥grafo: ").append(identificadorSismografo).append("\n");
+        mensaje.append(" - Nuevo estado: ").append(nombreEstado).append("\n");
+        mensaje.append(" - Fecha y hora: ").append(fechaHora).append("\n");
+        mensaje.append(" - Motivos:\n");
 
-        System.out.println("    SismÛgrafo: " + notificacion.getIdentificadorSismografo());
-        System.out.println("    Nuevo Estado: " + notificacion.getNombreEstado());
-        System.out.println("    Fecha y Hora: " + notificacion.getFechaHora());
-        System.out.println("    Motivos: " + notificacion.getMotivos());
+        if (motivos != null && !motivos.isEmpty()) {
+            for (Map.Entry<String, String> entry : motivos.entrySet()) {
+                mensaje.append("     ‚Ä¢ ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            }
+        } else {
+            mensaje.append("     (Sin motivos registrados)\n");
+        }
+
+        mensaje.append("\nSaludos,\nSistema de Monitoreo S√≠smico");
+
+        // Por ahora, simulamos el env√≠o
+        System.out.println(">>> (STUB) Enviando mail a: " + destinatario);
+        System.out.println("------------------------------------------");
+        System.out.println(mensaje);
+        System.out.println("------------------------------------------");
     }
 }

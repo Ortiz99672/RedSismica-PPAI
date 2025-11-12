@@ -4,11 +4,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import ppai.redsismica.dto.EstadoDTO;
 
+/**
+ * Entidad que representa el Estado de una entidad (e.g., OrdenInspeccion, Sismografo).
+ * El campo `nombreEstado` es la clave primaria.
+ */
 @Entity
 public class Estado {
 
     @Id
-    private String nombreEstado;
+    private String nombreEstado; // Clave primaria
     private String ambito;
 
     // --- Constructores ---
@@ -20,26 +24,37 @@ public class Estado {
         this.ambito = ambito;
     }
 
-    // --- Métodos del diagrama (Implementados) ---
+    // --- Métodos de Negocio ---
+    /**
+     * Verifica si el ámbito del estado es "OrdenInspeccion".
+     */
     public boolean esAmbitoOI() {
         return "OrdenInspeccion".equalsIgnoreCase(this.ambito);
     }
 
+    /**
+     * Verifica si el ámbito del estado es "Sismografo".
+     */
     public boolean esAmbitoSismografo() {
-        // Asumimos que el ámbito se llama "Sismografo"
         return "Sismografo".equalsIgnoreCase(this.ambito);
     }
 
+    /**
+     * Verifica si el estado es "Cerrada".
+     */
     public boolean esCerrada() {
         return "Cerrada".equalsIgnoreCase(this.nombreEstado);
     }
 
+    /**
+     * Verifica si el estado es "Fuera de Servicio".
+     */
     public boolean esFueraDeServicio() {
         return "Fuera de Servicio".equalsIgnoreCase(this.nombreEstado);
     }
 
     /**
-     * Implementa la lógica de 1.2.5.1: esCRI()
+     * Verifica si el estado es "Completamente Realizada".
      */
     public boolean esCompletamenteRealizada() {
         return "Completamente Realizada".equalsIgnoreCase(this.nombreEstado);
@@ -54,8 +69,16 @@ public class Estado {
     public String getNombreEstado() {
         return nombreEstado;
     }
-    // ... (resto de getters/setters)
-    public void setNombreEstado(String nombreEstado) { this.nombreEstado = nombreEstado; }
-    public String getAmbito() { return ambito; }
-    public void setAmbito(String ambito) { this.ambito = ambito; }
+
+    public void setNombreEstado(String nombreEstado) {
+        this.nombreEstado = nombreEstado;
+    }
+
+    public String getAmbito() {
+        return ambito;
+    }
+
+    public void setAmbito(String ambito) {
+        this.ambito = ambito;
+    }
 }

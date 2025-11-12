@@ -1,0 +1,127 @@
+.modal-cierre-content {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.notificacion-mensaje {
+    margin-bottom: 1.5rem;
+}
+
+.mensaje-exito {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    margin: 0;
+    font-weight: 500;
+    border-left: 4px solid #28a745;
+}
+
+.notificacion-titulo {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.notificacion-titulo h3 {
+    color: var(--primary-color, #007bff);
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.notificacion-detalles {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: var(--light-color, #f8f9fa);
+    border-radius: 4px;
+}
+
+.detalle-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+}
+
+.detalle-item:last-child {
+    border-bottom: none;
+}
+
+.detalle-label {
+    font-weight: 600;
+    color: var(--dark-color, #343a40);
+    flex: 0 0 40%;
+}
+
+.detalle-valor {
+    color: var(--dark-color, #343a40);
+    flex: 1;
+    text-align: right;
+}
+
+.notificacion-seccion {
+    margin-bottom: 1.5rem;
+}
+
+.notificacion-seccion h4 {
+    color: var(--dark-color, #343a40);
+    margin: 0 0 0.75rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.motivos-lista,
+.destinatarios-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background-color: var(--light-color, #f8f9fa);
+    border-radius: 4px;
+    padding: 0.75rem;
+}
+
+.motivos-lista li,
+.destinatarios-lista li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+    color: var(--dark-color, #343a40);
+}
+
+.motivos-lista li:last-child,
+.destinatarios-lista li:last-child {
+    border-bottom: none;
+}
+
+.motivos-lista li strong {
+    color: var(--primary-color, #007bff);
+}
+
+.modal-cierre-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color, #dee2e6);
+}
+
+.modal-cierre-actions .btn-primary {
+    background-color: var(--primary-color, #007bff);
+    color: var(--white-color, #fff);
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: background-color 0.2s ease;
+}
+
+.modal-cierre-actions .btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.modal-cierre-actions .btn-primary:active {
+    transform: scale(0.98);
+}
+
+

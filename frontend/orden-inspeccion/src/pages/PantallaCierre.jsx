@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import observerService from '../services/ObserverService';
+import ModalCierreInspeccion from '../components/ModalCierreInspeccion';
+import ModalCancelacion from '../components/ModalCancelacion';
 
 // --- Estilos CSS ---
 // Para una app más grande, esto iría en un archivo .css separado.
@@ -17,8 +20,13 @@ const styles = `
     
     body {
         margin: 0;
-        background-color: #e9ecef; /* Fondo gris claro para toda la página */
+        background-image: url('https://png.pngtree.com/background/20230614/original/pngtree-3d-image-of-waves-and-waves-on-a-black-background-picture-image_3502212.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
         color: var(--dark-color);
+        min-height: 100vh;
     }
 
     .cierre-container {
@@ -26,8 +34,10 @@ const styles = `
         max-width: 900px;
         margin: 2rem auto;
         padding: 1rem;
-        background-color: var(--light-color);
+        background-color: rgba(248, 249, 250, 0.95);
         border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(5px);
     }
 
     .cierre-header {
@@ -43,16 +53,33 @@ const styles = `
     }
 
     .api-status {
-        padding: 0.75rem;
+        padding: 1rem 1.5rem;
         border-radius: 4px;
         margin-bottom: 1.5rem;
         text-align: center;
-        font-weight: 500;
+        font-weight: 600;
+        font-size: 1.1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        animation: slideDown 0.3s ease;
+        position: relative;
+        z-index: 100;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .api-status.success {
         background-color: #d4edda;
         color: #155724;
+        border: 2px solid #28a745;
     }
 
     .api-status.error {
@@ -67,11 +94,18 @@ const styles = `
         padding: 1.5rem;
         margin-bottom: 1.5rem;
         box-shadow: var(--shadow);
-        transition: opacity 0.3s ease;
+        transition: opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+        opacity: 1;
+        max-height: 2000px;
+        overflow: hidden;
     }
 
     .step-card.disabled {
-        opacity: 0.5;
+        opacity: 0;
+        max-height: 0;
+        margin-bottom: 0;
+        padding-top: 0;
+        padding-bottom: 0;
         pointer-events: none;
     }
 
@@ -226,26 +260,98 @@ function PantallaCierre() {
     // Estados para la UI
     const [loading, setLoading] = useState(false);
     const [apiMessage, setApiMessage] = useState({ text: '', isError: false });
+    const [modalAbierto, setModalAbierto] = useState(false);
+    const [modalCancelacionAbierto, setModalCancelacionAbierto] = useState(false);
 
-    // 1. Cargar datos iniciales
+    // Callback para recibir notificaciones del Observer Service
+    const manejarNotificacion = useCallback((datosNotificacion) => {
+        console.log('PantallaCierre: Recibida notificación del Observer Service:', datosNotificacion);
+        if (datosNotificacion) {
+            setNotificacion(datosNotificacion);
+            // Primero mostrar mensaje de éxito, luego abrir modal después de un breve delay
+            setApiMessage({ 
+                text: '¡Cierre de orden exitoso! El sismógrafo ha sido actualizado y se han enviado los correos.', 
+                isError: false 
+            });
+            // Abrir el modal después de 2 segundos para que el usuario vea claramente el mensaje de éxito
+            setTimeout(() => {
+                setModalAbierto(true);
+            }, 2000);
+        }
+    }, []);
+
+    // Suscribirse al Observer Service cuando el componente se monte
     useEffect(() => {
-        const cargarDatosIniciales = async () => {
-            setLoading(true);
-            try {
-                const response = await fetch(`${API_BASE_URL}/cargar-datos-iniciales`);
-                if (!response.ok) throw new Error('Error al cargar datos iniciales');
-                const data = await response.json();
-                setResponsable(data.riLogueado);
-                setOrdenes(data.ordenes);
-                setApiMessage({ text: 'Datos iniciales cargados. Por favor, seleccione una orden.', isError: false });
-            } catch (error) {
-                setApiMessage({ text: `Error: ${error.message}`, isError: true });
-            } finally {
-                setLoading(false);
-            }
+        console.log('PantallaCierre: Suscribiéndose al Observer Service...');
+        const desuscribir = observerService.suscribir(manejarNotificacion);
+
+        // Limpiar la suscripción cuando el componente se desmonte
+        return () => {
+            console.log('PantallaCierre: Desuscribiéndose del Observer Service...');
+            desuscribir();
         };
+    }, [manejarNotificacion]);
+
+    // Función para cargar datos iniciales
+    const cargarDatosIniciales = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/cargar-datos-iniciales`);
+            if (!response.ok) throw new Error('Error al cargar datos iniciales');
+            const data = await response.json();
+            setResponsable(data.riLogueado);
+            setOrdenes(data.ordenes);
+            setApiMessage({ text: 'Datos iniciales cargados. Por favor, seleccione una orden.', isError: false });
+        } catch (error) {
+            setApiMessage({ text: `Error: ${error.message}`, isError: true });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 1. Cargar datos iniciales al montar el componente
+    useEffect(() => {
         cargarDatosIniciales();
     }, []);
+
+    // Función para volver atrás y reiniciar el proceso
+    const handleVolverAtras = () => {
+        // Limpiar todos los estados
+        setNotificacion(null);
+        setModalAbierto(false);
+        setOrdenSeleccionada(null);
+        setObservacion('');
+        setMotivoSeleccionado('');
+        setComentario('');
+        setMotivosAgregados({});
+        setMotivos([]);
+        setApiMessage({ text: '', isError: false });
+        
+        // Recargar datos iniciales
+        cargarDatosIniciales();
+    };
+
+    // Función para cerrar el modal
+    const handleCerrarModal = () => {
+        setModalAbierto(false);
+    };
+
+    // Función para manejar la cancelación completa
+    const handleCancelacionCompleta = () => {
+        // Limpiar todos los estados
+        setNotificacion(null);
+        setModalCancelacionAbierto(false);
+        setOrdenSeleccionada(null);
+        setObservacion('');
+        setMotivoSeleccionado('');
+        setComentario('');
+        setMotivosAgregados({});
+        setMotivos([]);
+        setApiMessage({ text: '', isError: false });
+        
+        // Recargar datos iniciales
+        cargarDatosIniciales();
+    };
 
     const handleApiCall = async (url, options, successMessage) => {
         setLoading(true);
@@ -304,12 +410,50 @@ function PantallaCierre() {
     };
 
     const handleConfirmarCierre = async (confirmacion) => {
+        if (!confirmacion) {
+            // Si se cancela, mostrar modal de cancelación
+            setModalCancelacionAbierto(true);
+            return;
+        }
+
         const data = await handleApiCall(
             `${API_BASE_URL}/confirmar-cierre`,
-            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(confirmacion) },
-            'Cierre de orden procesado.'
+            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirmacion: confirmacion }) },
+            '¡Cierre de orden exitoso! El sismógrafo ha sido actualizado y se han enviado los correos.'
         );
-        if (data) setNotificacion(data);
+        
+        if (data) {
+            // El backend ya notificó a sus observadores (PantallaCCRS e InterfazNotificaciones)
+            // Ahora notificamos a los observadores del frontend usando el patrón Observer
+            console.log('PantallaCierre: Notificando a los observadores del frontend...');
+            
+            // Mapear los datos del backend al formato esperado por el frontend
+            // El backend devuelve: identificadorSismografo, nombreEstado, fechaHora, motivos, destinatarios
+            const notificacionFrontend = {
+                idSismografo: data.identificadorSismografo,
+                estadoSismografo: data.nombreEstado,
+                fechaHora: data.fechaHora,
+                motivos: data.motivos || {},
+                mailsResponsables: data.destinatarios || []
+            };
+            
+            // Notificar a todos los observadores suscritos en el frontend
+            observerService.notificar(notificacionFrontend);
+            
+            // También actualizamos el estado local directamente
+            setNotificacion(notificacionFrontend);
+            
+            // Mostrar mensaje de éxito primero
+            setApiMessage({ 
+                text: '¡Cierre de orden exitoso! El sismógrafo ha sido actualizado y se han enviado los correos.', 
+                isError: false 
+            });
+            
+            // Abrir el modal después de 2 segundos para que el usuario vea claramente el mensaje de éxito
+            setTimeout(() => {
+                setModalAbierto(true);
+            }, 2000);
+        }
     };
 
     return (
@@ -318,7 +462,7 @@ function PantallaCierre() {
             <div className="cierre-container">
                 <header className="cierre-header">
                     <h1>Cierre de Orden de Inspección</h1>
-                    {responsable && <p>Bienvenido, <strong>{responsable.nombre} {responsable.apellido}</strong></p>}
+                    <p>Bienvenido <strong>Jacinto Barbosa</strong></p>
                 </header>
 
                 {apiMessage.text && (
@@ -327,24 +471,20 @@ function PantallaCierre() {
                     </div>
                 )}
 
-                {notificacion ? (
-                    <div className="notificacion-card">
-                        <h3>Notificación Generada con Éxito</h3>
-                        <p><strong>Sismógrafo:</strong> {notificacion.idSismografo}</p>
-                        <p><strong>Nuevo Estado:</strong> {notificacion.estadoSismografo}</p>
-                        <p><strong>Fecha y Hora:</strong> {new Date(notificacion.fechaHora).toLocaleString()}</p>
-                        <h4>Motivos Reportados:</h4>
-                        <ul>
-                            {Object.entries(notificacion.motivos).map(([motivo, comentario]) => (
-                                <li key={motivo}><strong>{motivo}:</strong> {comentario}</li>
-                            ))}
-                        </ul>
-                        <h4>Se notificará a:</h4>
-                        <ul>
-                            {notificacion.mailsResponsables.map(mail => <li key={mail}>{mail}</li>)}
-                        </ul>
-                    </div>
-                ) : (
+                <ModalCierreInspeccion
+                    isOpen={modalAbierto && notificacion !== null}
+                    onClose={handleCerrarModal}
+                    notificacion={notificacion}
+                    onVolverAtras={handleVolverAtras}
+                />
+
+                <ModalCancelacion
+                    isOpen={modalCancelacionAbierto}
+                    onClose={() => setModalCancelacionAbierto(false)}
+                    onAceptar={handleCancelacionCompleta}
+                />
+
+                {!notificacion && (
                     <>
                         <div className="step-card">
                             <h2>1. Seleccionar Orden de Inspección</h2>

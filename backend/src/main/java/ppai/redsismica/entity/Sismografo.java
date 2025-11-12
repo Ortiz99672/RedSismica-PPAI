@@ -1,12 +1,20 @@
 package ppai.redsismica.entity;
 
-import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.util.List;
-import ppai.redsismica.dto.SismografoDTO;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import ppai.redsismica.dto.NotificacionDTO;
+import ppai.redsismica.dto.SismografoDTO;
 
 
 @Entity
@@ -56,17 +64,16 @@ public class Sismografo {
      * Busca en la lista de cambios de estado cuál es el actual
      * (el que no tiene fecha de fin).
      */
-    public CambioEstado obtenerEstadoActual() {
-        System.out.println("Sismografo: Ejecutando 7.1.12.1.1.1 obtenerEstadoActual()...");
-        if (this.cambioDeEstado == null) {
-            return null;
-        }
+    public CambioEstado buscarEstadoActual() {
+        System.out.println("Sismografo: Ejecutando 7.1.12.1.3.3 buscarEstadoActual()...");
+
+        // Iterar sobre la colección y delegar la lógica al objeto CambioEstado (Fragmento 4)
         for (CambioEstado ce : this.cambioDeEstado) {
             if (ce.esEstadoActual()) {
                 return ce;
             }
         }
-        return null; // O manejar error si no se encuentra ninguno
+        return null; // No hay estado actual.
     }
 
     /**
@@ -120,6 +127,53 @@ public class Sismografo {
 
         // 7.1.12.1.3: Llama a crearCambioEstado
         this.crearCambioEstado(estadoSismografo, fechaHora, empleado, todosLosMotivos, motivosConComentarios);
+    }
+
+    /**
+     * 7.1.12.1: Implementación de "obtenerEstadoActual"
+     * Busca el registro de CambioEstado que tiene fechaHoraFin nula.
+     * Este registro representa el estado actual del Sismógrafo.
+     * @return El CambioEstado actualmente activo, o null si no se encuentra.
+     */
+    public CambioEstado obtenerEstadoActual() {
+        System.out.println("Sismografo: Ejecutando 7.1.12.1 obtenerEstadoActual()...");
+        // El estado actual es el que no tiene fecha de fin
+        return this.cambioDeEstado.stream()
+                .filter(ce -> ce.getFechaHoraFin() == null)
+                .findFirst()
+                .orElse(null); // Retorna null si no hay ningún estado activo
+    }
+
+    public NotificacionDTO setSismografoFueraDeServicio(Estado estadoFS, LocalDateTime fechaYHoraActual, Empleado empleadoRI, 
+                                                    List<MotivoTipo> todosLosMotivos, Map<String, String> motivosConComentarios,
+                                                    List<String> mailsResponsablesReparacion) { 
+    
+        System.out.println("Sismografo: Ejecutando 7.1.13.1.2.2 setSismografoFueraDeServicio()...");
+
+        // 1. Finalizar estado actual (si existe)
+        CambioEstado estadoActual = this.obtenerEstadoActual(); 
+        if (estadoActual != null) {
+            estadoActual.setFechaHoraFin(fechaYHoraActual);
+            System.out.println("Sismografo: Estado actual finalizado.");
+        } else {
+            System.out.println("Sismografo: No hay estado actual para finalizar. El sismógrafo probablemente no tenía un estado previo.");
+        }
+
+        // 2. Crear nuevo cambio de estado
+        CambioEstado nuevoCambio = new CambioEstado(fechaYHoraActual, estadoFS, empleadoRI); 
+        nuevoCambio.crearMotivosFueraDeServicio(motivosConComentarios, todosLosMotivos);
+        this.cambioDeEstado.add(nuevoCambio);
+
+        System.out.println("Sismografo: Nuevo estado 'Fuera de Servicio' creado y añadido.");
+
+        // 3. Crear y retornar el DTO (Paso 7.1.13.1.2.2.6)
+        return new NotificacionDTO(
+            this.identificadorSismografo, 
+            estadoFS.getNombreEstado(),       
+            fechaYHoraActual,
+            motivosConComentarios,
+            mailsResponsablesReparacion // <--- Usa la lista de mails recibida
+        );
     }
 
     public void ponerFueraDeServicio() {

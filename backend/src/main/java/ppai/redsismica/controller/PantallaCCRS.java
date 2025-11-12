@@ -1,42 +1,50 @@
 package ppai.redsismica.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
-import ppai.redsismica.service.GestorCierre;
-import ppai.redsismica.dto.EmpleadoDTO;
-import ppai.redsismica.dto.OrdenInspeccionDTO;
-import ppai.redsismica.dto.DatosInicialesDTO;
-import ppai.redsismica.dto.MotivoTipoDTO;
-import ppai.redsismica.dto.NotificacionDTO;
-
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import ppai.redsismica.dto.ConfirmacionDTO;
+import ppai.redsismica.dto.DatosInicialesDTO;
+import ppai.redsismica.dto.EmpleadoDTO;
+import ppai.redsismica.dto.MotivoTipoDTO;
+import ppai.redsismica.dto.NotificacionDTO;
+import ppai.redsismica.dto.OrdenInspeccionDTO;
+import ppai.redsismica.service.GestorCierre;
+
+/**
+ * Controlador REST que representa la Pantalla "Cierre de Orden de Inspección" (CCRS).
+ * Actúa como un Observador del GestorCierre para recibir notificaciones
+ * de cambios de estado y "publicarlos en monitores".
+ */
 @RestController
 @RequestMapping("/api/cierre-orden")
 public class PantallaCCRS implements IObservador {
 
-    // El controlador DEPENDE del Gestor (que tiene scope de sesión)
+    // El controlador depende del Gestor (que tiene scope de sesión)
     private final GestorCierre gestorCierre;
+
+    // Atributos para almacenar los datos de la notificación para "mostrar en monitores"
+    private String idSismografo;
+    private String estado;
+    private LocalDate fecha;
+    private Map<String,String> motivos;
 
     @Autowired
     public PantallaCCRS(GestorCierre gestorCierre) {
         this.gestorCierre = gestorCierre;
     }
 
-    private String idSismografo;
-    private String estado;
-    private LocalDate fecha;
-    private Map<String,String> motivos;
+    // --- Getters y Setters de los datos de la Notificación ---
 
     public String getIdSismografo() {
         return idSismografo;
@@ -63,119 +71,165 @@ public class PantallaCCRS implements IObservador {
         this.motivos = motivos;
     }
 
-    /**
-     * PASO 1.1: habilitarVentana()
-     * Este método DESAPARECE del backend.
-     * La responsabilidad de "habilitar la ventana" es 100% de React Router
-     * al cargar el componente <PantallaCierre> en el frontend.
-     */
-    /*
+    // --- Métodos del Controlador (REST Endpoints) ---
 
     /**
-     * PASO 1.2: opcionCierreDeInscripcion()
-     * El frontend (React en un useEffect) llama a este método APENAS se carga.
-     * Este método le pasa la responsabilidad al Gestor
-     * y devuelve los datos iniciales (el RI Logueado).
-     *
-     * Cambiado a GET ya que es para "obtener" datos iniciales.
+     * Endpoint para iniciar el Caso de Uso (CU).
+     * Llama al gestor para buscar el RI logueado y sus órdenes de inspección.
+     * @return DTO con el RI Logueado y las órdenes para mostrar.
      */
     @GetMapping("/cargar-datos-iniciales")
     public DatosInicialesDTO opcionCierreDeInscripcion() {
         System.out.println("PantallaCCRS: opcionCierreDeInscripcion() (llamado desde React)");
 
-        // 1. Llama al gestor (que hace 1.2.1 y 1.2.3)
         gestorCierre.opcionCierreDeInscripcion();
 
-        // 2. Le pide al gestor los resultados
         EmpleadoDTO riLogueado = gestorCierre.getResponsableInspeccionLogueado();
         List<OrdenInspeccionDTO> ordenes = gestorCierre.getOrdenesParaMostrar();
 
-        // 3. Devuelve el DTO agrupado como JSON
         return new DatosInicialesDTO(riLogueado, ordenes);
     }
 
+    /**
+     * Endpoint para tomar la orden seleccionada por el usuario.
+     * @param nroOrden Número de la orden seleccionada.
+     */
     @PostMapping("/seleccionar-orden")
     public ResponseEntity<Void> tomarSeleccionOrden(@RequestParam Integer nroOrden) {
         System.out.println("PantallaCCRS: Recibido tomarSeleccionOrden() para Nro: " + nroOrden);
 
-        // 3.1: Llama al gestor para que guarde la selección en su estado
         gestorCierre.tomarSeleccionOrden(nroOrden);
 
-        // Devolvemos un 200 OK vacío para confirmar la acción
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Endpoint para tomar la observación de cierre ingresada por el usuario.
+     * @param observacion La observación ingresada.
+     * @return Lista de motivos de fuera de servicio para seleccionar.
+     */
     @PostMapping("/tomar-observacion")
     public List<MotivoTipoDTO> tomarObservacion(@RequestBody String observacion) {
         System.out.println("PantallaCCRS: Recibido tomarObservacion(): " + observacion);
 
-        // 4.1.1: Llama al gestor
-        // El gestor guardará la observación y ejecutará 4.1.2 (buscarMotivos)
         List<MotivoTipoDTO> motivos = gestorCierre.tomarObservacion(observacion);
 
-        // 4.1.3: Devolvemos la lista de motivos al frontend como JSON
         return motivos;
     }
 
+    /**
+     * Endpoint para tomar un motivo de fuera de servicio seleccionado.
+     * @param motivoDescripcion Descripción del motivo seleccionado.
+     */
     @PostMapping("/seleccionar-motivo")
     public ResponseEntity<Void> tomarSeleccionMotivoFueraServicio(@RequestBody String motivoDescripcion) {
-        System.out.println("PantallaCCRS: Recibido 5 tomarSeleccionMotivoFueraServicio(): " + motivoDescripcion);
+        System.out.println("PantallaCCRS: Recibido tomarSeleccionMotivoFueraServicio(): " + motivoDescripcion);
 
-        // 5.1: Llama al gestor para que guarde el motivo temporalmente
         gestorCierre.tomarSeleccionMotivoFueraDeServicio(motivoDescripcion);
 
-        // 5.1.1: (solicitarIngresoComentario)
-        // Devolvemos 200 OK. React interpreta esto como "éxito,
-        // ahora habilita el campo de comentario".
+        // Se devuelve 200 OK para indicar que el frontend puede habilitar el campo de comentario.
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Endpoint para tomar el comentario asociado al motivo temporal.
+     * @param comentario El comentario ingresado.
+     */
     @PostMapping("/tomar-comentario")
     public ResponseEntity<Void> tomarIngresoComentario(@RequestBody String comentario) {
-        System.out.println("PantallaCCRS: Recibido 6 tomarIngresoComentario(): " + comentario);
+        System.out.println("PantallaCCRS: Recibido tomarIngresoComentario(): " + comentario);
 
-        // 6.1: Llama al gestor para que asocie el comentario
-        // con el motivo temporal guardado en el paso 5.
-        // (Usamos el método 'pasamanos' 6, que llama al 6.1)
         gestorCierre.tomarComentarioIngresado(comentario);
 
-        // Devolvemos 200 OK. React puede ahora limpiar
-        // los campos y prepararse para el siguiente loop.
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Endpoint final para confirmar el cierre de la orden.
+     * @param confirmacionDTO DTO con el campo confirmacion (true/false).
+     * @return NotificacionDTO si el cierre es exitoso, o mensaje de error/cancelación.
+     */
     @PostMapping("/confirmar-cierre")
-    public ResponseEntity<?> tomarConfirmacion(@RequestBody boolean confirmacion) {
-        System.out.println("PantallaCCRS: Recibido 7 tomarConfirmacion(): " + confirmacion);
-
-        // 7.1: Llama al gestor
-        NotificacionDTO notificacionDTO = gestorCierre.tomarConfirmacionCierreOrden(confirmacion);
-
-        if (notificacionDTO != null) {
-            return ResponseEntity.ok(notificacionDTO);
-
-        } else {
-            // Si la validación falló o el usuario canceló
-            if (!confirmacion) {
-                return ResponseEntity.ok().body("Cierre cancelado por el usuario.");
+    public ResponseEntity<?> tomarConfirmacion(@RequestBody ConfirmacionDTO confirmacionDTO) {
+        try {
+            if (confirmacionDTO == null || confirmacionDTO.getConfirmacion() == null) {
+                // También aceptamos un boolean directo como fallback
+                return ResponseEntity.badRequest().body("El campo 'confirmacion' es requerido.");
             }
-            // Error de validación de datos mínimos
+
+            Boolean confirmacion = confirmacionDTO.getConfirmacion();
+            System.out.println("PantallaCCRS: Recibido tomarConfirmacion(): " + confirmacion);
+
+            NotificacionDTO notificacionDTO = gestorCierre.tomarConfirmacionCierreOrden(confirmacion);
+
+            if (notificacionDTO != null) {
+                // Cierre exitoso: el DTO se devuelve al frontend para confirmación visual
+                return ResponseEntity.ok(notificacionDTO);
+
+            } else {
+                // Lógica de cancelación o error de validación
+                if (!confirmacion) {
+                    return ResponseEntity.ok().body("Cierre cancelado por el usuario.");
+                }
+                // Error de validación de datos mínimos
+                return ResponseEntity
+                        .badRequest()
+                        .body("Datos insuficientes: Se requiere una observacion y al menos un motivo con comentario.");
+            }
+        } catch (Exception e) {
+            System.err.println("PantallaCCRS: Error al procesar confirmación de cierre: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity
-                    .badRequest()
-                    .body("Datos insuficientes: Se requiere una observacion y al menos un motivo con comentario.");
+                    .status(500)
+                    .body("Error interno del servidor: " + e.getMessage());
         }
     }
 
+    // --- Implementación del Patrón Observer (IObservador) ---
+
+    /**
+     * Endpoint para obtener el estado actualizado de la notificación.
+     * Permite al frontend consultar los datos después de que se haya notificado.
+     * @return NotificacionDTO con los datos actualizados, o null si no hay datos.
+     */
+    @GetMapping("/estado-actualizado")
+    public ResponseEntity<NotificacionDTO> obtenerEstadoActualizado() {
+        System.out.println("PantallaCCRS: Consultando estado actualizado...");
+        
+        if (this.idSismografo == null || this.estado == null) {
+            System.out.println("PantallaCCRS: No hay datos de notificación disponibles.");
+            return ResponseEntity.ok().body(null);
+        }
+
+        // Construimos un DTO con los datos almacenados
+        // Nota: No tenemos la fecha/hora completa ni los destinatarios aquí,
+        // pero podemos construir un DTO básico para el frontend
+        NotificacionDTO notificacion = new NotificacionDTO(
+                this.idSismografo,
+                this.estado,
+                this.fecha != null ? this.fecha.atStartOfDay() : null,
+                this.motivos,
+                null // Los destinatarios no se almacenan en PantallaCCRS
+        );
+
+        return ResponseEntity.ok(notificacion);
+    }
+
+    /**
+     * Implementación del método de la interfaz IObservador.
+     * Lógica para "publicar en monitores" (STUB).
+     *
+     * @param notificacion DTO con los detalles del sismógrafo.
+     */
     @Override
-    public void actualizar(NotificacionDTO notificacion, List<String> destinatarios) {
-        // Lógica para "publicar en monitores".
+    public void actualizar(NotificacionDTO notificacion) {
+        // Almacenamos los datos para que el frontend los pueda mostrar.
+        // ACTUALIZACION EN TODAS LAS PANTALLAS SIMULADA
         this.setIdSismografo(notificacion.getIdentificadorSismografo());
         this.setEstado(notificacion.getNombreEstado());
         this.setFecha(notificacion.getFechaHora().toLocalDate());
         this.setMotivos(notificacion.getMotivos());
 
-
-        // En una aplicación real, aquí se usaría WebSockets/SSE para notificar al frontend.
         System.out.println(">>> (STUB) PantallaCCRS: Publicando actualización en monitores...");
         System.out.println("    Sismógrafo: " + notificacion.getIdentificadorSismografo());
         System.out.println("    Nuevo Estado: " + notificacion.getNombreEstado());
