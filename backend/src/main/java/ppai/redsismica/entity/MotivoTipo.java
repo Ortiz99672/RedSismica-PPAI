@@ -1,23 +1,22 @@
 package ppai.redsismica.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.Column;
 import ppai.redsismica.dto.MotivoTipoDTO;
 
 
 /**
- * Clase que representa MotivoTipo según el diagrama de clases.
- * - La clave primaria es 'descripcion'
- * - Métodos definidos: descripcion() y getDescripcion()
+ * Entidad que representa un Tipo de Motivo.
+ * La clave primaria es `descripcion`.
  */
 @Entity
 @Table(name = "motivo_tipo")
 public class MotivoTipo {
     @Id
     @Column(length = 100, nullable = false, unique = true)
-    private String descripcion;
+    private String descripcion; // Clave primaria
 
     public MotivoTipo() {
     }
@@ -36,7 +35,7 @@ public class MotivoTipo {
     }
 
     /**
-     * Setter implícito (no mostrado en el diagrama pero necesario en Java).
+     * Setter requerido por JPA.
      */
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;

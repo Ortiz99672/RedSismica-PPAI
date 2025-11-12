@@ -1,46 +1,42 @@
 package ppai.redsismica.service;
 
-import org.springframework.stereotype.Service;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.stereotype.Service;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.HashMap;
-
-
-// Importaciones de Entidades
-import ppai.redsismica.entity.Empleado;
-import ppai.redsismica.entity.Sesion;
-import ppai.redsismica.entity.Usuario;
-import ppai.redsismica.entity.OrdenInspeccion;
-import ppai.redsismica.entity.Estado;
-import ppai.redsismica.entity.MotivoTipo;
-import ppai.redsismica.entity.Sismografo;
-
-// Importaciones de DTOs
-import ppai.redsismica.dto.EmpleadoDTO;
-import ppai.redsismica.dto.OrdenInspeccionDTO;
-import ppai.redsismica.dto.MotivoTipoDTO;
-import ppai.redsismica.dto.NotificacionDTO;
-
-// Importaciones de Repositorios
-import ppai.redsismica.repository.SesionRepository;
-import ppai.redsismica.repository.OrdenInspeccionRepository;
-import ppai.redsismica.repository.EstadoRepository;
-import ppai.redsismica.repository.MotivoTipoRepository;
-import ppai.redsismica.repository.EmpleadoRepository;
-
-// Interfaces del patrón Observer
 import ppai.redsismica.controller.IObservador;
 import ppai.redsismica.controller.ISujeto;
+import ppai.redsismica.dto.EmpleadoDTO;
+import ppai.redsismica.dto.MotivoTipoDTO;
+import ppai.redsismica.dto.NotificacionDTO;
+import ppai.redsismica.dto.OrdenInspeccionDTO;
+import ppai.redsismica.entity.Empleado;
+import ppai.redsismica.entity.Estado;
+import ppai.redsismica.entity.MotivoTipo;
+import ppai.redsismica.entity.OrdenInspeccion;
+import ppai.redsismica.entity.Sesion;
+import ppai.redsismica.entity.Usuario;
+import ppai.redsismica.repository.EmpleadoRepository;
+import ppai.redsismica.repository.EstadoRepository;
+import ppai.redsismica.repository.MotivoTipoRepository;
+import ppai.redsismica.repository.OrdenInspeccionRepository;
+import ppai.redsismica.repository.SesionRepository;
 
+/**
+ * Clase que gestiona el Caso de Uso "Cerrar Orden de Inspección".
+ * Tiene un scope de sesión y actúa como el **Sujeto** en el Patrón Observer
+ * para notificar el cambio de estado del sismógrafo.
+ */
 @Service
 @Scope(value = WebApplicationContext.SCOPE_SESSION,
         proxyMode = ScopedProxyMode.TARGET_CLASS)
@@ -52,12 +48,14 @@ public class GestorCierre implements ISujeto {
     private final EstadoRepository estadoRepository;
     private final MotivoTipoRepository motivoTipoRepository;
     private final EmpleadoRepository empleadoRepository;
+    // Lista de observadores (Interfaces) inyectadas por Spring (PantallaCCRS, InterfazNotificaciones)
+    private final List<IObservador> interfaces;
 
 
-    // --- 2. Atributos de Estado (del diagrama) ---
-    private EmpleadoDTO responsableInspeccionLogueado;
+    // --- 2. Atributos de Estado del Gestor (Sesión) ---
     private Sesion sesionActual;
     private Empleado empleadoLogueado;
+    private EmpleadoDTO responsableInspeccionLogueado;
     private List<OrdenInspeccionDTO> ordenesParaMostrar;
     private OrdenInspeccion ordenSeleccionada;
     private String observaciones;
@@ -69,12 +67,13 @@ public class GestorCierre implements ISujeto {
     private LocalDateTime fechaYHoraActual;
     private Estado estadoSismografoFueraDeServicio;
     private List<String> mailsResponsablesReparacion;
-    private List<IObservador> observadores = new ArrayList<>();
-    private List<IObservador> interfaces;
     private String idSismografo;
 
+    // --- 3. Atributos del Patrón Observer ---
+    private List<IObservador> observadores = new ArrayList<>();
+
     /**
-     * El constructor recibe las dependencias de Spring.
+     * Constructor que inyecta las dependencias del repositorio y las interfaces observadoras.
      */
     @Autowired
     public GestorCierre(SesionRepository sesionRepository, OrdenInspeccionRepository ordenInspeccionRepository,
@@ -88,6 +87,7 @@ public class GestorCierre implements ISujeto {
         this.empleadoRepository = empleadoRepository;
         this.interfaces = interfaces;
 
+        // Carga la sesión activa al inicio del gestor
         this.sesionActual = sesionRepository.findFirstByFechaHoraHastaIsNull();
         if (this.sesionActual == null) {
             System.out.println("--- ADVERTENCIA: No se encontró sesión activa al crear GestorCierre ---");
@@ -115,33 +115,65 @@ public class GestorCierre implements ISujeto {
     @Override
     public void notificar() {
         System.out.println("GestorCierre: Notificando a " + this.observadores.size() + " observadores...");
+
+        // Se construye el DTO con los datos que se van a notificar Y los destinatarios
         NotificacionDTO notificacion = new NotificacionDTO(
-                this.idSismografo.toString(),
+                this.idSismografo,
                 this.estadoSismografoFueraDeServicio.getNombreEstado(),
                 this.fechaYHoraActual,
-                this.motivosSeleccionadosConComentario
+                this.motivosSeleccionadosConComentario,
+                this.mailsResponsablesReparacion // ¡NUEVO ARGUMENTO!
         );
-        List<String> destinatarios = this.mailsResponsablesReparacion;
 
+        // Llamar al método actualizar de cada observador (con la nueva firma)
         for (IObservador observador : this.observadores) {
-            observador.actualizar(notificacion, destinatarios);
-        }
+            observador.actualizar(notificacion);
+    }
+}
+
+    /**
+     * Quita todos los observadores suscritos. Se usa al final del CU.
+     */
+    public void desuscribirTodos() {
+        System.out.println("GestorCierre: Desuscribiendo todos los observadores...");
+        this.observadores.clear();
     }
 
-    // --- Métodos del Diagrama de Secuencia ---
+    // --- Lógica de Negocio (Diagrama de Secuencia) ---
 
-    public void notificarSismografoFueraServicio() {
-        System.out.println("GestorCierre: Iniciando flujo notificarSismografoFueraServicio()...");
+    /**
+     * Inicia el proceso de notificación. Se suscribe a los observadores
+     * (Interfaces) y luego llama a `notificar()`.
+     *
+     * @return NotificacionDTO con los datos del sismógrafo.
+     */
+    public NotificacionDTO notificarSismografoFueraServicio() {
+        
         this.obtenerMailResponsableReparacion();
 
+        // Suscribe las interfaces inyectadas
         for (IObservador observador : this.interfaces) {
             this.suscribir(observador);
         }
 
-        this.notificar();
+        // Se notifica el cambio de estado (que internamente construye y usa el DTO con mails)
+        this.notificar(); 
+
+        // Se construye el DTO para ser devuelto al controlador (DEBE COINCIDIR)
+        return new NotificacionDTO(
+                this.idSismografo,
+                this.estadoSismografoFueraDeServicio.getNombreEstado(),
+                this.fechaYHoraActual,
+                this.motivosSeleccionadosConComentario,
+                this.mailsResponsablesReparacion // ¡NUEVO ARGUMENTO!
+        );
     }
 
-    public String obtenerMailResponsableReparacion() {
+    /**
+     * Busca los correos electrónicos de los empleados que son
+     * responsables de reparación.
+     */
+    public void obtenerMailResponsableReparacion() {
         System.out.println("GestorCierre: Ejecutando obtenerMailResponsableReparacion()...");
         this.mailsResponsablesReparacion = new ArrayList<>();
         List<Empleado> todosLosEmpleados = empleadoRepository.findAll();
@@ -153,49 +185,30 @@ public class GestorCierre implements ISujeto {
         }
 
         System.out.println("GestorCierre: Se encontraron " + this.mailsResponsablesReparacion.size() + " mails de responsables.");
-        return null;
     }
 
-    // --- Métodos del Diagrama de Secuencia 1° Entrega ---
-
     /**
-     * 1.2: Metodo llamado por la PantallaCierre.
-     * Es el "pasamanos" que inicia la secuencia.
+     * Inicia la secuencia de búsqueda de datos iniciales para la pantalla.
      */
     public void opcionCierreDeInscripcion() {
         System.out.println("GestorCierre: Recibida opcionCierreDeInscripcion()");
-
-
         this.buscarRILogueado();
         this.buscarOrdenes();
         this.ordenarOrdenes();
     }
 
     /**
-     * 1.2.1: Método wrapper para buscar el RI (Empleado) logueado.
-     * Delega las llamadas a Sesion y Usuario.
+     * Busca y asigna el Responsable de Inspección (RI) logueado.
      */
     public void buscarRILogueado() {
         System.out.println("GestorCierre: Ejecutando buscarRILogueado()...");
-
-        // 1. Usamos la sesión que ya cargamos en el constructor
         if (this.sesionActual != null) {
-
-            // 2. (1.2.2) El gestor le pide el usuario a la sesión ("obtenerUsuario")
             Usuario usuarioLogueado = this.sesionActual.getUsuario();
-
             if (usuarioLogueado != null) {
-
-                // --- CORRECCIÓN ---
-                // 1. Obtener el Empleado DESDE el Usuario.
                 Empleado empleadoEncontrado = usuarioLogueado.getEmpleado();
-
-                // 2. Verificar si el empleado existe.
                 if (empleadoEncontrado != null) {
-                    // 3. Asignar la entidad y el DTO a los atributos de la clase.
                     this.empleadoLogueado = empleadoEncontrado;
                     this.responsableInspeccionLogueado = empleadoEncontrado.mapearADTO();
-
                     System.out.println("RI Logueado encontrado: " + this.responsableInspeccionLogueado.getNombre());
                 } else {
                     System.out.println("Error: Usuario no tiene empleado asociado.");
@@ -204,12 +217,13 @@ public class GestorCierre implements ISujeto {
                 System.out.println("Error: Sesión no tiene usuario asociado.");
             }
         } else {
-            System.out.println("Error: No se encontró sesión activa (cargada en el constructor).");
+            System.out.println("Error: No se encontró sesión activa.");
         }
     }
 
     /**
-     * 1.2.3: Implementa la búsqueda y filtrado de órdenes.
+     * Busca las órdenes de inspección que le corresponden al RI logueado
+     * y que tienen estado "Completamente Realizado".
      */
     public void buscarOrdenes() {
         System.out.println("GestorCierre: Ejecutando buscarOrdenes()...");
@@ -219,37 +233,36 @@ public class GestorCierre implements ISujeto {
             return;
         }
 
-        // 1. Buscamos TODAS las órdenes (se puede optimizar)
         List<OrdenInspeccion> todasLasOrdenes = ordenInspeccionRepository.findAll();
 
-        // 2. Iniciamos el loop de filtrado
         this.ordenesParaMostrar = todasLasOrdenes.stream()
-                // 1.2.4: esDeEmpleado(RI)
                 .filter(orden -> orden.esDeEmpleado(this.empleadoLogueado))
-                // 1.2.5: sosEstadoCompletamenteRealizado()
                 .filter(orden -> orden.sosEstadoCompletamenteRealizado())
-                // 1.2.6: mostrarDatosOrden() (convertimos a DTO)
                 .map(orden -> orden.mapearADTO())
                 .collect(Collectors.toList());
 
         System.out.println("GestorCierre: Se encontraron " + this.ordenesParaMostrar.size() + " órdenes válidas para mostrar.");
     }
 
-
+    /**
+     * Ordena las órdenes encontradas por fecha de finalización (descendente).
+     */
     public void ordenarOrdenes() {
         System.out.println("GestorCierre: Ejecutando ordenarOrdenes()...");
         if (this.ordenesParaMostrar != null) {
-            // Ordenamos por fecha de finalización, de más reciente a más antigua (descendente)
             this.ordenesParaMostrar.sort(Comparator.comparing(
                     OrdenInspeccionDTO::getFechaHoraFinalizacion,
-                    Comparator.nullsLast(Comparator.reverseOrder()) // Maneja nulos y ordena descendente
+                    Comparator.nullsLast(Comparator.reverseOrder())
             ));
         }
     }
 
+    /**
+     * Registra la orden de inspección seleccionada por el usuario en el estado del gestor.
+     * @param nroOrden Número de la orden seleccionada.
+     */
     public void tomarSeleccionOrden(Integer nroOrden) {
         System.out.println("GestorCierre: Ejecutando tomarSeleccionOrden() para Nro: " + nroOrden);
-        // Buscamos la *entidad* completa y la guardamos en estado
         this.ordenSeleccionada = ordenInspeccionRepository.findById(nroOrden).orElse(null);
 
         if (this.ordenSeleccionada == null) {
@@ -261,45 +274,41 @@ public class GestorCierre implements ISujeto {
     }
 
     /**
-     * 4: El usuario ingresa la observación.
-     * El controlador llama a este método.
-     * Este método, además, inicia la búsqueda de Motivos (Paso 4.1.2)
-     * y devuelve la lista de motivos al controlador.
+     * Registra la observación de cierre y dispara la búsqueda de motivos.
+     * @param observacion La observación ingresada por el usuario.
+     * @return Lista de DTOs de motivos de fuera de servicio.
      */
     public List<MotivoTipoDTO> tomarObservacion(String observacion) {
         System.out.println("GestorCierre: Ejecutando tomarObservacion(): " + observacion);
         this.observaciones = observacion;
-
-        // El diagrama indica que "pedirObservacion" (4.1.1)
-        // dispara "buscarMotivoFS" (4.1.2)
         return this.buscarMotivoFS();
     }
 
     /**
-     * 4.1.2: Busca los Motivos de Fuera de Servicio.
+     * Busca todos los Motivos de Fuera de Servicio.
+     * @return Lista de DTOs de motivos.
      */
     public List<MotivoTipoDTO> buscarMotivoFS() {
         System.out.println("GestorCierre: Ejecutando buscarMotivoFS()...");
 
-        // 1. Buscamos las entidades
         this.motivosFueraServicio = motivoTipoRepository.findAll();
 
-        // 2. Mapeamos a DTO (4.1.2.1: getDescripcion es llamado por mapearADTO)
         List<MotivoTipoDTO> motivosDTO = this.motivosFueraServicio.stream()
                 .map(motivo -> motivo.mapearADTO())
                 .collect(Collectors.toList());
 
         System.out.println("Se encontraron " + motivosDTO.size() + " motivos.");
 
-        // 3. Devolvemos la lista de DTOs para que el
-        // controlador (Pantalla) se la muestre al usuario
         return motivosDTO;
     }
 
+    /**
+     * Registra el motivo de fuera de servicio seleccionado temporalmente.
+     * @param motivoDescripcion Descripción del motivo seleccionado.
+     */
     public void tomarSeleccionMotivoFueraDeServicio(String motivoDescripcion) {
-        System.out.println("GestorCierre: Ejecutando 5.1 tomarSeleccionMotivoFueraServicio(): " + motivoDescripcion);
+        System.out.println("GestorCierre: Ejecutando tomarSeleccionMotivoFueraServicio(): " + motivoDescripcion);
 
-        // Busca en la lista de motivos cargados
         this.motivoTemporal = this.motivosFueraServicio.stream()
                 .filter(m -> m.getDescripcion().equals(motivoDescripcion))
                 .findFirst()
@@ -309,42 +318,43 @@ public class GestorCierre implements ISujeto {
             System.out.println("Error: El motivo '" + motivoDescripcion + "' no es válido o no se encontró.");
         } else {
             System.out.println("Motivo temporal guardado: " + this.motivoTemporal.getDescripcion());
-            // 5.1.1: solicitarIngresoComentario() -> En React, esto es
-            // la app habilitando el campo de texto para el comentario.
-            // Aquí solo damos el OK implícito (status 200).
         }
     }
 
+    /**
+     * Asocia el comentario ingresado con el motivo temporal y lo guarda.
+     * @param comentario Comentario ingresado por el usuario.
+     */
     public void tomarComentarioIngresado(String comentario) {
-        System.out.println("GestorCierre: Ejecutando 6.1 tomarComentarioIngresado(): " + comentario);
+        System.out.println("GestorCierre: Ejecutando tomarComentarioIngresado(): " + comentario);
 
         if (this.motivoTemporal == null) {
             System.out.println("Error: Se intentó guardar un comentario sin un motivo seleccionado temporalmente.");
             return;
         }
 
-        // Asociamos el comentario con el motivo temporal y lo guardamos en el Map
         this.motivosSeleccionadosConComentario.put(this.motivoTemporal.getDescripcion(), comentario);
 
         System.out.println("GestorCierre: Motivo '" + this.motivoTemporal.getDescripcion() + "' y comentario guardados. Total: " + this.motivosSeleccionadosConComentario.size());
 
-        // Limpiamos el motivo temporal, listos para el siguiente loop
+        // Limpiamos el motivo temporal
         this.motivoTemporal = null;
     }
 
     /**
-     * 7.1: El controlador llama a este método cuando el usuario confirma.
-     * MODIFICADO: Ahora devuelve un DTO con los datos de la notificación,
-     * o null si falla.
+     * Lógica principal del CU: Valida, cierra la orden, y notifica si corresponde.
+     *
+     * @param confirmacion true si el usuario confirma, false si cancela.
+     * @return NotificacionDTO con los datos si el cierre fue exitoso, o null en caso contrario.
      */
     public NotificacionDTO tomarConfirmacionCierreOrden(boolean confirmacion) {
-        System.out.println("GestorCierre: Ejecutando 7.1 tomarConfirmacionCierreOrden()...");
+        System.out.println("GestorCierre: Ejecutando tomarConfirmacionCierreOrden()...");
         this.confirmacionCierreOrden = confirmacion;
 
         if (!this.confirmacionCierreOrden) {
             System.out.println("El usuario canceló el cierre.");
             this.finCU();
-            return null; // Devuelve null si se cancela
+            return null;
         }
 
         boolean esValido = this.validarDatosMinimosRequeridosParaCierreMotivos();
@@ -354,8 +364,6 @@ public class GestorCierre implements ISujeto {
             Estado estadoCerrada = this.buscarEstadoCerradaParaOI();
 
             if (estadoCerrada != null) {
-                System.out.println("GestorCierre: Búsqueda de estado 'Cerrada' completada.");
-
                 this.estadoSismografoFueraDeServicio = this.buscarEstadoSismografoFueraDeServicio();
                 this.obtenerFechaYHoraActual();
                 this.cerrarOrdenInspeccion(estadoCerrada);
@@ -364,29 +372,29 @@ public class GestorCierre implements ISujeto {
                     this.enviarSismografoParaReparacion();
                 }
 
-                // Rediseño del CU
-                this.notificarSismografoFueraServicio();
+                // Patrón Observer: Notificación a Observadores (Pantalla, InterfazNotificaciones)
+                NotificacionDTO notificacionDTO = this.notificarSismografoFueraServicio();
 
-                // 7.1.20: Fin del Caso de Uso
                 this.finCU();
+                // Retorna el DTO para el controlador/frontend
+                return notificacionDTO;
 
             } else {
                 System.out.println("Error: No se pudo encontrar el estado 'Cerrada' para 'OrdenInspeccion'");
             }
         }
-        return null; // Devuelve null si la validación falla
+        // Devuelve null si la validación falla o no se encuentra el estado "Cerrada"
+        return null;
     }
 
     /**
-     * 7.1.1: Valida los datos mínimos según la descripción del CU.
+     * Valida la existencia de una observación y al menos un motivo seleccionado.
+     * @return true si los datos mínimos son válidos.
      */
     public boolean validarDatosMinimosRequeridosParaCierreMotivos() {
-        System.out.println("GestorCierre: Ejecutando 7.1.1 validarDatosMinimosRequeridosParaCierreMotivos()...");
+        System.out.println("GestorCierre: Ejecutando validarDatosMinimosRequeridosParaCierreMotivos()...");
 
-        // 1. "valida que exista una observación de cierre de orden"
         boolean observacionValida = (this.observaciones != null && !this.observaciones.trim().isEmpty());
-
-        // 2. "y al menos un motivo seleccionado"
         boolean motivosValidos = (this.motivosSeleccionadosConComentario != null && !this.motivosSeleccionadosConComentario.isEmpty());
 
         if (!observacionValida) System.out.println("Validación fallida: No hay observación.");
@@ -397,31 +405,31 @@ public class GestorCierre implements ISujeto {
     }
 
     /**
-     * 7.1.2: Busca el estado "Cerrada" para el ámbito "OrdenInspeccion".
+     * Busca el estado "Cerrada" para el ámbito "OrdenInspeccion".
+     * @return La entidad Estado "Cerrada" o null si no se encuentra.
      */
     public Estado buscarEstadoCerradaParaOI() {
-        System.out.println("GestorCierre: Ejecutando 7.1.2 buscarEstadoCerradaParaOI()...");
+        System.out.println("GestorCierre: Ejecutando buscarEstadoCerradaParaOI()...");
         List<Estado> todosLosEstados = estadoRepository.findAll();
 
-        // Loop (7.1.3 y 7.1.4)
         for (Estado estado : todosLosEstados) {
             if (estado.esAmbitoOI() && estado.esCerrada()) {
                 System.out.println("Estado 'Cerrada' encontrado.");
                 return estado;
             }
         }
-
         return null;
     }
 
+    /**
+     * Busca el estado "Fuera de Servicio" para el ámbito "Sismografo".
+     * @return La entidad Estado "Fuera de Servicio" o null si no se encuentra.
+     */
     public Estado buscarEstadoSismografoFueraDeServicio() {
-        System.out.println("GestorCierre: Ejecutando 7.1.5 buscarEstadoSismografoFueraDeServicio()...");
+        System.out.println("GestorCierre: Ejecutando buscarEstadoSismografoFueraDeServicio()...");
         List<Estado> todosLosEstados = estadoRepository.findAll();
 
-        // Loop (7.1.6 y 7.1.7)
         for (Estado estado : todosLosEstados) {
-            // 7.1.6: esAmbitoSismografo()
-            // 7.1.7: esFueraDeServicio()
             if (estado.esAmbitoSismografo() && estado.esFueraDeServicio()) {
                 System.out.println("Estado 'Fuera de Servicio' (Sismografo) encontrado.");
                 return estado;
@@ -433,100 +441,63 @@ public class GestorCierre implements ISujeto {
     }
 
     /**
-     * 7.1.8: Implementación de "obtenerFechaYHoraActual"
+     * Obtiene y registra la fecha y hora actual del sistema.
      */
     public void obtenerFechaYHoraActual() {
-        System.out.println("GestorCierre: Ejecutando 7.1.8 obtenerFechaYHoraActual()...");
+        System.out.println("GestorCierre: Ejecutando obtenerFechaYHoraActual()...");
         this.fechaYHoraActual = LocalDateTime.now();
     }
 
     /**
-     * 7.1.9: Implementación de "cerrarOrdenInspeccion"
+     * Cierra la orden de inspección seleccionada con el estado y la observación.
+     * @param estadoCerrada La entidad Estado "Cerrada".
      */
     public void cerrarOrdenInspeccion(Estado estadoCerrada) {
-        System.out.println("GestorCierre: Ejecutando 7.1.9 cerrarOrdenInspeccion()...");
+        System.out.println("GestorCierre: Ejecutando cerrarOrdenInspeccion()...");
 
         if (this.ordenSeleccionada == null) {
             System.out.println("Error: No hay orden seleccionada para cerrar.");
             return;
         }
 
-        // 7.1.10: Delega el cierre a la propia orden
         this.ordenSeleccionada.cerrar(estadoCerrada, this.fechaYHoraActual, this.observaciones);
-
-        // Guardamos en la base de datos
         ordenInspeccionRepository.save(this.ordenSeleccionada);
 
         System.out.println("Orden " + this.ordenSeleccionada.getNroOrden() + " guardada en estado 'Cerrada'.");
     }
 
     /**
-     * 7.1.11: Implementación de "enviarSismografoParaReparacion"
+     * Llama a la lógica de la Orden para cambiar el estado del Sismógrafo
+     * a "Fuera de Servicio".
      */
     public void enviarSismografoParaReparacion() {
-        System.out.println("GestorCierre: Ejecutando 7.1.11 enviarSismografoParaReparacion()...");
+        System.out.println("GestorCierre: Ejecutando enviarSismografoParaReparacion()...");
 
-        if (this.ordenSeleccionada == null) {
-            System.out.println("Error: No hay orden seleccionada para enviar sismógrafo.");
-            return;
-        }
-        if (this.estadoSismografoFueraDeServicio == null) {
-            System.out.println("Error: No se encontró el estado 'Fuera de Servicio'.");
-            return;
-        }
-        if (this.empleadoLogueado == null) {
-            System.out.println("Error: No hay empleado logueado para asignar al cambio de estado.");
+        if (this.ordenSeleccionada == null || this.estadoSismografoFueraDeServicio == null || this.empleadoLogueado == null) {
+            System.out.println("Error: Datos insuficientes para enviar sismógrafo a reparación.");
             return;
         }
 
-        // 7.1.12: Delega a la orden, pasando los parámetros
         this.ordenSeleccionada.enviarSismografoParaReparacion(
                 this.estadoSismografoFueraDeServicio,
                 this.fechaYHoraActual,
                 this.empleadoLogueado,
                 this.motivosFueraServicio,
-                this.motivosSeleccionadosConComentario
+                this.motivosSeleccionadosConComentario,
+                this.mailsResponsablesReparacion
         );
     }
 
     /**
-     * 7.1.13: Implementación de "obtenerMailResponsableReparacion"
-     * Busca TODOS los empleados, filtra los que son responsables
-     * y guarda sus mails.
-
-    public void obtenerMailResponsableReparacion() {
-        System.out.println("GestorCierre: Ejecutando 7.1.13 obtenerMailResponsableReparacion()...");
-
-
-     */
-    /**
-     * 7.1.16: Implementación de "publicarEnMonitores" (STUB)
-     * Llama al servicio externo 7.1.17
-     */
-    public void publicarEnMonitores() {
-        System.out.println("GestorCierre: Ejecutando 7.1.16 publicarEnMonitores()...");
-        // 7.1.17: publicar() -> Lógica de servicio externo (STUB)
-        System.out.println(">>> (STUB) Llamando a servicio externo: PantallaCCRS.publicar(...)");
-    }
-
-    /**
-     * 7.1.18: Implementación de "enviarNotificacionesPorMail" (STUB)
-     * Llama al servicio externo 7.1.19
-     */
-    public void enviarNotificacionesPorMail() {
-        System.out.println("GestorCierre: Ejecutando 7.1.18 enviarNotificacionesPorMail()...");
-        // 7.1.19: enviarMail() -> Lógica de servicio externo (STUB)
-        System.out.println(">>> (STUB) Llamando a servicio externo: InterfazNotificaciones.enviarMail(...)");
-    }
-
-    /**
-     * 7.1.20: Implementación de "finCU"
-     * Limpia el estado del gestor (scope de sesión)
+     * Finaliza el Caso de Uso, limpiando el estado de la sesión.
      */
     public void finCU() {
-        System.out.println("GestorCierre: Ejecutando 7.1.20 finCU()...");
+        System.out.println("GestorCierre: Ejecutando finCU()...");
 
-        // Limpiamos todos los atributos de estado para el próximo caso de uso
+        // Desuscribe todos los observadores para limpiar la referencia
+        this.desuscribirTodos();
+
+        // Limpiamos los atributos de estado para el próximo caso de uso
         this.responsableInspeccionLogueado = null;
         this.empleadoLogueado = null;
         this.ordenesParaMostrar = null;
@@ -540,6 +511,7 @@ public class GestorCierre implements ISujeto {
         this.fechaYHoraActual = null;
         this.estadoSismografoFueraDeServicio = null;
         this.mailsResponsablesReparacion = null;
+        this.idSismografo = null;
 
         System.out.println("GestorCierre: Estado de sesión limpiado. FIN CU.");
     }
@@ -552,8 +524,4 @@ public class GestorCierre implements ISujeto {
     public List<OrdenInspeccionDTO> getOrdenesParaMostrar() {
         return this.ordenesParaMostrar;
     }
-
-
-
-
 }

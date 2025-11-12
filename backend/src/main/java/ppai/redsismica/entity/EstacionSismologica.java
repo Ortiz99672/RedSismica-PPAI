@@ -1,21 +1,24 @@
 package ppai.redsismica.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import ppai.redsismica.dto.EstacionSismologicaDTO;
-import ppai.redsismica.dto.SismografoDTO;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
+import ppai.redsismica.dto.NotificacionDTO;
+
+/**
+ * Entidad que representa una Estación Sismológica.
+ * El campo `codigoEstacion` es la clave primaria.
+ */
 @Entity
 public class EstacionSismologica {
 
     @Id
-    private String codigoEstacion;
+    private String codigoEstacion; // Clave primaria
 
     private String documentoCertificacionAdd;
     private LocalDate fechaSolicitudCertificacion;
@@ -25,7 +28,7 @@ public class EstacionSismologica {
     private String nroCertificacionAdquisicion;
 
     @OneToOne (mappedBy = "estacionSismologica")
-    private Sismografo sismografo;
+    private Sismografo sismografo; // Relación con Sismografo
 
     // --- Constructores ---
     public EstacionSismologica() {
@@ -41,107 +44,91 @@ public class EstacionSismologica {
         this.nroCertificacionAdquisicion = nroCertificacionAdquisicion;
     }
 
-    // --- Métodos del diagrama ---
-    public String getNombre() {
-        return this.nombre;
-    }
-
-    public String obtenerIdSismografo() {
-        if (this.sismografo != null) {
-            return this.sismografo.getNroSerie();
-        }
-        return null;
-    }
+    // --- Métodos de Negocio ---
 
     /**
-     * 7.1.12.1: Implementación de "ponerSismografoFueraDeServicio"
+     * Delega al Sismógrafo asociado la responsabilidad de cambiar su estado
+     * a Fuera de Servicio, iniciando un nuevo registro de CambioEstado.
+     * @param estadoFS El estado "Fuera de Servicio" para el sismógrafo.
+     * @param fechaYHoraActual Fecha y hora del cambio.
+     * @param empleadoRI El Empleado (RI) que realiza la acción.
+     * @param todosLosMotivos Lista completa de MotivoTipo.
+     * @param motivosSeleccionadosConComentario Map<MotivoTipo, Comentario> seleccionados.
      */
-    public void ponerSismografoFueraDeServicio(
-            Estado estadoSismografo,
-            LocalDateTime fechaHora,
-            Empleado empleado,
-            List<MotivoTipo> todosLosMotivos,
-            Map<String, String> motivosConComentarios
-    ) {
-        System.out.println("EstacionSismologica: Ejecutando 7.1.12.1 ponerSismografoFueraDeServicio()...");
+    /**
+     * 7.1.12.1.2: Implementación de "setSismografoFueraDeServicio"
+     * Delega la tarea al Sismógrafo asociado (Fragmento 1).
+     * @return El DTO de notificación retornado por Sismografo.
+     */
+    public NotificacionDTO setSismografoFueraDeServicio(Estado estadoFS, LocalDateTime fechaYHoraActual, Empleado empleadoRI,
+                                                        List<MotivoTipo> todosLosMotivos, Map<String, String> motivosSeleccionadosConComentario,
+                                                        List<String> mailsResponsablesReparacion) { // <--- Nuevo parámetro
+        
+        System.out.println("EstacionSismologica: Ejecutando 7.1.12.1.2 setSismografoFueraDeServicio()...");
         if (this.sismografo != null) {
-
-            // 7.1.12.1.1: Delega al sismógrafo
-            this.sismografo.enviarAReparar(estadoSismografo, fechaHora, empleado, todosLosMotivos, motivosConComentarios);
-
+            // 7.1.12.1.3: Llama a setSismografoFueraDeServicio del Sismógrafo
+            return this.sismografo.setSismografoFueraDeServicio(
+                estadoFS,
+                fechaYHoraActual,
+                empleadoRI,
+                todosLosMotivos,
+                motivosSeleccionadosConComentario,
+                mailsResponsablesReparacion // <--- Pasa el nuevo parámetro
+            );
         } else {
-            System.out.println("EstacionSismologica: No hay sismógrafo para poner fuera de servicio.");
+            System.err.println("EstacionSismologica: Advertencia: No hay Sismografo asociado para cambiar de estado.");
+            return null;
         }
     }
 
-    // --- Método de Mapeo ---
-    public EstacionSismologicaDTO mapearADTO() {
-        SismografoDTO sismografoDTO = null;
-        if (this.sismografo != null) {
-            // Delegamos el mapeo al sismógrafo
-            sismografoDTO = this.sismografo.mapearADTO();
-        }
-        return new EstacionSismologicaDTO(this.codigoEstacion, this.nombre, sismografoDTO);
-    }
-
-    // --- Getters y Setters adicionales ---
+    // --- Getters y Setters ---
     public String getCodigoEstacion() {
         return codigoEstacion;
     }
-
     public void setCodigoEstacion(String codigoEstacion) {
         this.codigoEstacion = codigoEstacion;
     }
-
+    public Sismografo getSismografo() {
+        return sismografo;
+    }
+    public void setSismografo(Sismografo sismografo) {
+        this.sismografo = sismografo;
+    }
+    public Double getLatitud() {
+        return latitud;
+    }
+    public void setLatitud(Double latitud) {
+        this.latitud = latitud;
+    }
+    public Double getLongitud() {
+        return longitud;
+    }
+    public void setLongitud(Double longitud) {
+        this.longitud = longitud;
+    }
+    public String getNombre() {
+        return nombre;
+    }
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+    public String getNroCertificacionAdquisicion() {
+        return nroCertificacionAdquisicion;
+    }
+    public void setNroCertificacionAdquisicion(String nroCertificacionAdquisicion) {
+        this.nroCertificacionAdquisicion = nroCertificacionAdquisicion;
+    }
+    public LocalDate getFechaSolicitudCertificacion() {
+        return fechaSolicitudCertificacion;
+    }
+    public void setFechaSolicitudCertificacion(LocalDate fechaSolicitudCertificacion) {
+        this.fechaSolicitudCertificacion = fechaSolicitudCertificacion;
+    }
     public String getDocumentoCertificacionAdd() {
         return documentoCertificacionAdd;
     }
-
     public void setDocumentoCertificacionAdd(String documentoCertificacionAdd) {
         this.documentoCertificacionAdd = documentoCertificacionAdd;
     }
 
-    public LocalDate getFechaSolicitudCertificacion() {
-        return fechaSolicitudCertificacion;
-    }
-
-    public void setFechaSolicitudCertificacion(LocalDate fechaSolicitudCertificacion) {
-        this.fechaSolicitudCertificacion = fechaSolicitudCertificacion;
-    }
-
-    public Double getLatitud() {
-        return latitud;
-    }
-
-    public void setLatitud(Double latitud) {
-        this.latitud = latitud;
-    }
-
-    public Double getLongitud() {
-        return longitud;
-    }
-
-    public void setLongitud(Double longitud) {
-        this.longitud = longitud;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public String getNroCertificacionAdquisicion() {
-        return nroCertificacionAdquisicion;
-    }
-
-    public void setNroCertificacionAdquisicion(String nroCertificacionAdquisicion) {
-        this.nroCertificacionAdquisicion = nroCertificacionAdquisicion;
-    }
-
-    public Sismografo getSismografo() {
-        return sismografo;
-    }
-
-    public void setSismografo(Sismografo sismografo) {
-        this.sismografo = sismografo;
-    }
 }

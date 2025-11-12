@@ -4,11 +4,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import ppai.redsismica.dto.RolDTO;
 
+/**
+ * Entidad que representa un Rol en el sistema.
+ * El campo `nombre` es la clave primaria.
+ */
 @Entity
 public class Rol {
 
     @Id
-    private String nombre;
+    private String nombre; // Clave primaria
     private String descripcion;
 
     // --- Constructores ---
@@ -20,17 +24,18 @@ public class Rol {
         this.descripcion = descripcion;
     }
 
-    // --- NUEVO MÉTODO DE MAPEO ---
+    // --- Método de Mapeo ---
     /**
-     * Se mapea a sí mismo a un DTO.
+     * Mapea la entidad a un DTO.
      */
     public RolDTO mapearADTO() {
         return new RolDTO(this.nombre, this.descripcion);
     }
 
+    /**
+     * Verifica si este Rol es el "Responsable de Reparacion".
+     */
     public boolean esRolResponsableDeReparacion() {
-        // Asumimos que el nombre del rol es "Responsable de Reparacion"
-        // (Esto podría venir de una constante)
         return "Responsable de Reparacion".equalsIgnoreCase(this.nombre);
     }
 
@@ -38,15 +43,12 @@ public class Rol {
     public String getNombre() {
         return nombre;
     }
-
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
-
     public String getDescripcion() {
         return descripcion;
     }
-
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
     }

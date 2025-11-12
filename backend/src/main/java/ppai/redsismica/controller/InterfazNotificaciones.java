@@ -1,12 +1,12 @@
 package ppai.redsismica.controller;
 
-import org.springframework.stereotype.Component;
-import ppai.redsismica.dto.NotificacionDTO;
-
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.stereotype.Component;
+
+import ppai.redsismica.dto.NotificacionDTO;
 
 @Component
 public class InterfazNotificaciones implements IObservador {
@@ -42,25 +42,24 @@ public class InterfazNotificaciones implements IObservador {
     }
 
     @Override
-    public void actualizar(NotificacionDTO notificacion, List<String> destinatarios) {
-        System.out.println("InterfazNotificaciones: Recibida actualización para enviar correo.");
+    public void actualizar(NotificacionDTO notificacion) { // Â¡NUEVA FIRMA!
+        System.out.println("InterfazNotificaciones: Recibida actualizacion para enviar correo.");
+        // Obtiene la lista de mails del DTO
+        List<String> destinatarios = notificacion.getDestinatarios(); 
+
         for (String destinatario : destinatarios) {
             System.out.println(">>> (STUB) Enviando mail a: " + destinatario);
             enviarMail(notificacion);
         }
-
     }
 
     public void enviarMail(NotificacionDTO notificacion) {
 
-        // Lógica para construir y enviar el correo electrónico.
-        this.setIdSismografo(notificacion.getIdentificadorSismografo());
-        this.setEstado(notificacion.getNombreEstado());
-        this.setFecha(notificacion.getFechaHora().toLocalDate());
-        this.setMotivos(notificacion.getMotivos());
+        // Logica para construir y enviar el correo electronico.
 
+        // FALTA ESTOOOOOO
 
-        System.out.println("    Sismógrafo: " + notificacion.getIdentificadorSismografo());
+        System.out.println("    Sismografo: " + notificacion.getIdentificadorSismografo());
         System.out.println("    Nuevo Estado: " + notificacion.getNombreEstado());
         System.out.println("    Fecha y Hora: " + notificacion.getFechaHora());
         System.out.println("    Motivos: " + notificacion.getMotivos());

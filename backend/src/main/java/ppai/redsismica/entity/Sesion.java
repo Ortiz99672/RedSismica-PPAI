@@ -1,29 +1,34 @@
 package ppai.redsismica.entity;
 
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+
+/**
+ * Entidad que registra una Sesión de Usuario.
+ * Utiliza una clave primaria compartida (`@MapsId`) con la entidad Usuario.
+ */
 @Entity
 @Table(name = "sesion")
 public class Sesion {
 
-    /**
-     * La Clave Primaria (PK) de Sesion es la relación con Usuario.
-     * @MapsId le dice a JPA que la PK de esta entidad
-     * es mapeada desde la entidad 'Usuario'.
-     */
     @Id
-    @Column(name = "usuario_nombreUsuario") // Esta es la columna PK/FK
+    @Column(name = "usuario_nombreUsuario") // Columna PK/FK
     private String usuarioNombreUsuario;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId // Mapea la PK de la relación 'usuario' a nuestro campo @Id 'usuarioNombreUsuario'
+    @MapsId // Mapea la PK de Usuario a nuestro campo @Id 'usuarioNombreUsuario'
     @JoinColumn(name = "usuario_nombreUsuario") // Define la columna de clave foránea
     private Usuario usuario;
 
     private LocalDateTime fechaHoraDesde;
-
     private LocalDateTime fechaHoraHasta;
 
     /**
@@ -32,19 +37,10 @@ public class Sesion {
     public Sesion() {
     }
 
-    // --- Getters y Setters Manuales ---
-
-    // Getter/Setter para el nuevo campo Id
-    public String getUsuarioNombreUsuario() {
-        return usuarioNombreUsuario;
-    }
-
-    public void setUsuarioNombreUsuario(String usuarioNombreUsuario) {
-        this.usuarioNombreUsuario = usuarioNombreUsuario;
-    }
+    // --- Getters y Setters ---
 
     /**
-     * Este método implementa la lógica de tu diagrama: obtenerUsuario()
+     * Retorna el Usuario asociado a esta Sesión.
      */
     public Usuario getUsuario() {
         return usuario;
@@ -68,5 +64,13 @@ public class Sesion {
 
     public void setFechaHoraHasta(LocalDateTime fechaHoraHasta) {
         this.fechaHoraHasta = fechaHoraHasta;
+    }
+
+    public String getUsuarioNombreUsuario() {
+        return usuarioNombreUsuario;
+    }
+
+    public void setUsuarioNombreUsuario(String usuarioNombreUsuario) {
+        this.usuarioNombreUsuario = usuarioNombreUsuario;
     }
 }
