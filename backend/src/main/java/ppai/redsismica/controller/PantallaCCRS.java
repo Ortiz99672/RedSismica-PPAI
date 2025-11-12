@@ -15,11 +15,15 @@ import ppai.redsismica.dto.OrdenInspeccionDTO;
 import ppai.redsismica.dto.DatosInicialesDTO;
 import ppai.redsismica.dto.MotivoTipoDTO;
 import ppai.redsismica.dto.NotificacionDTO;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cierre-orden")
-public class PantallaCCRS {
+public class PantallaCCRS implements IObservador {
 
     // El controlador DEPENDE del Gestor (que tiene scope de sesión)
     private final GestorCierre gestorCierre;
@@ -27,6 +31,36 @@ public class PantallaCCRS {
     @Autowired
     public PantallaCCRS(GestorCierre gestorCierre) {
         this.gestorCierre = gestorCierre;
+    }
+
+    private String idSismografo;
+    private String estado;
+    private LocalDate fecha;
+    private Map<String,String> motivos;
+
+    public String getIdSismografo() {
+        return idSismografo;
+    }
+    public void setIdSismografo(String idSismografo) {
+        this.idSismografo = idSismografo;
+    }
+    public String getEstado() {
+        return estado;
+    }
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+    public LocalDate getFecha() {
+        return fecha;
+    }
+    public void setFecha(LocalDate fecha) {
+        this.fecha = fecha;
+    }
+    public Map<String, String> getMotivos() {
+        return motivos;
+    }
+    public void setMotivos(Map<String, String> motivos) {
+        this.motivos = motivos;
     }
 
     /**
@@ -128,7 +162,22 @@ public class PantallaCCRS {
             // Error de validación de datos mínimos
             return ResponseEntity
                     .badRequest()
-                    .body("Datos insuficientes: Se requiere una observación y al menos un motivo con comentario.");
+                    .body("Datos insuficientes: Se requiere una observacion y al menos un motivo con comentario.");
         }
+    }
+
+    @Override
+    public void actualizar(NotificacionDTO notificacion, List<String> destinatarios) {
+        // Lógica para "publicar en monitores".
+        this.setIdSismografo(notificacion.getIdentificadorSismografo());
+        this.setEstado(notificacion.getNombreEstado());
+        this.setFecha(notificacion.getFechaHora().toLocalDate());
+        this.setMotivos(notificacion.getMotivos());
+
+
+        // En una aplicación real, aquí se usaría WebSockets/SSE para notificar al frontend.
+        System.out.println(">>> (STUB) PantallaCCRS: Publicando actualización en monitores...");
+        System.out.println("    Sismógrafo: " + notificacion.getIdentificadorSismografo());
+        System.out.println("    Nuevo Estado: " + notificacion.getNombreEstado());
     }
 }

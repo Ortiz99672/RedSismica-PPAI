@@ -92,9 +92,33 @@ const styles = `
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.75rem;
+        background-color: #fff;
         border-bottom: 1px solid #eee;
+        padding: 15px;
+        transition: background-color 0.2s;
     }
+
+    .item-list li .orden-numero {
+        text-align: left;
+        font-weight: bold;
+        min-width: 120px; /* Ancho mínimo para que no se comprima */
+    }
+
+    .item-list li .orden-datos {
+        text-align: center;
+        flex-grow: 1; /* Ocupa el espacio central */
+        font-size: 1rem;
+        margin-left: 1rem;
+        margin-right: 2rem;
+        color: #555;
+    }
+
+    .item-list li span {
+        flex-grow: 1;
+        text-align: center;
+        font-size: 1rem;
+    }
+
     
     .item-list li.selected {
         background-color: #e7f3ff;
@@ -327,7 +351,12 @@ function PantallaCierre() {
                             <ul className="item-list">
                                 {ordenes.map(orden => (
                                     <li key={orden.nroOrden} className={ordenSeleccionada === orden.nroOrden ? 'selected' : ''}>
-                                        <span>Orden N°{orden.nroOrden} - {orden.nombreSede}</span>
+                                        <span className="orden-numero">Orden N°{orden.nroOrden}</span>
+                                        <span className="orden-datos">
+                    Estado: {orden.estado.nombreEstado} - Fecha Finalización: {new Date(orden.fechaHoraFinalizacion).toLocaleString()}
+                                            <br/>
+                    Estación: {orden.nombreEstacion} - Sismógrafo: {orden.idSismografo}
+                </span>
                                         <button className="btn-primary" onClick={() => handleSeleccionarOrden(orden.nroOrden)} disabled={loading}>
                                             Seleccionar
                                         </button>
@@ -335,6 +364,7 @@ function PantallaCierre() {
                                 ))}
                             </ul>
                         </div>
+
 
                         <div className={`step-card ${!ordenSeleccionada ? 'disabled' : ''}`}>
                             <h2>2. Ingresar Observación de Cierre</h2>

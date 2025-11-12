@@ -1,5 +1,7 @@
 package ppai.redsismica.dto;
 
+import lombok.ToString;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -27,13 +29,11 @@ public class NotificacionDTO {
     private List<String> destinatarios;
 
     public NotificacionDTO(String identificadorSismografo, String nombreEstado,
-                           LocalDateTime fechaHora, Map<String, String> motivos,
-                           List<String> destinatarios) {
+                           LocalDateTime fechaHora, Map<String, String> motivos) {
         this.identificadorSismografo = identificadorSismografo;
         this.nombreEstado = nombreEstado;
         this.fechaHora = fechaHora;
         this.motivos = motivos;
-        this.destinatarios = destinatarios;
     }
 
     // --- Getters y Setters ---

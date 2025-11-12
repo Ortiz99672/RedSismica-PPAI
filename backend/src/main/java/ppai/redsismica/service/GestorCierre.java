@@ -37,12 +37,14 @@ import ppai.redsismica.repository.EstadoRepository;
 import ppai.redsismica.repository.MotivoTipoRepository;
 import ppai.redsismica.repository.EmpleadoRepository;
 
-
+// Interfaces del patrón Observer
+import ppai.redsismica.controller.IObservador;
+import ppai.redsismica.controller.ISujeto;
 
 @Service
 @Scope(value = WebApplicationContext.SCOPE_SESSION,
         proxyMode = ScopedProxyMode.TARGET_CLASS)
-public class GestorCierre {
+public class GestorCierre implements ISujeto {
 
     // --- 1. Dependencias (Inyectadas por Spring) ---
     private final SesionRepository sesionRepository;
@@ -67,8 +69,9 @@ public class GestorCierre {
     private LocalDateTime fechaYHoraActual;
     private Estado estadoSismografoFueraDeServicio;
     private List<String> mailsResponsablesReparacion;
-
-
+    private List<IObservador> observadores = new ArrayList<>();
+    private List<IObservador> interfaces;
+    private String idSismografo;
 
     /**
      * El constructor recibe las dependencias de Spring.
@@ -76,12 +79,14 @@ public class GestorCierre {
     @Autowired
     public GestorCierre(SesionRepository sesionRepository, OrdenInspeccionRepository ordenInspeccionRepository,
                         EstadoRepository estadoRepository, MotivoTipoRepository motivoTipoRepository,
-                        EmpleadoRepository empleadoRepository) {
+                        EmpleadoRepository empleadoRepository,
+                        List<IObservador> interfaces) {
         this.sesionRepository = sesionRepository;
         this.ordenInspeccionRepository = ordenInspeccionRepository;
         this.estadoRepository = estadoRepository;
         this.motivoTipoRepository = motivoTipoRepository;
         this.empleadoRepository = empleadoRepository;
+        this.interfaces = interfaces;
 
         this.sesionActual = sesionRepository.findFirstByFechaHoraHastaIsNull();
         if (this.sesionActual == null) {
@@ -93,7 +98,65 @@ public class GestorCierre {
         System.out.println("--- Se ha creado un NUEVO GestorCierre para la sesión ---");
     }
 
-    // --- 3. Métodos del Diagrama ---
+    // --- Métodos del Patrón Observer (ISujeto) ---
+
+    @Override
+    public void suscribir(IObservador observador) {
+        System.out.println("GestorCierre: Suscribiendo observador: " + observador.getClass().getSimpleName());
+        this.observadores.add(observador);
+    }
+
+    @Override
+    public void quitar(IObservador observador) {
+        System.out.println("GestorCierre: Quitando observador: " + observador.getClass().getSimpleName());
+        this.observadores.remove(observador);
+    }
+
+    @Override
+    public void notificar() {
+        System.out.println("GestorCierre: Notificando a " + this.observadores.size() + " observadores...");
+        NotificacionDTO notificacion = new NotificacionDTO(
+                this.idSismografo.toString(),
+                this.estadoSismografoFueraDeServicio.getNombreEstado(),
+                this.fechaYHoraActual,
+                this.motivosSeleccionadosConComentario
+        );
+        List<String> destinatarios = this.mailsResponsablesReparacion;
+
+        for (IObservador observador : this.observadores) {
+            observador.actualizar(notificacion, destinatarios);
+        }
+    }
+
+    // --- Métodos del Diagrama de Secuencia ---
+
+    public void notificarSismografoFueraServicio() {
+        System.out.println("GestorCierre: Iniciando flujo notificarSismografoFueraServicio()...");
+        this.obtenerMailResponsableReparacion();
+
+        for (IObservador observador : this.interfaces) {
+            this.suscribir(observador);
+        }
+
+        this.notificar();
+    }
+
+    public String obtenerMailResponsableReparacion() {
+        System.out.println("GestorCierre: Ejecutando obtenerMailResponsableReparacion()...");
+        this.mailsResponsablesReparacion = new ArrayList<>();
+        List<Empleado> todosLosEmpleados = empleadoRepository.findAll();
+
+        for (Empleado empleado : todosLosEmpleados) {
+            if (empleado.esResponsableDeReparacion()) {
+                this.mailsResponsablesReparacion.add(empleado.obtenerMail());
+            }
+        }
+
+        System.out.println("GestorCierre: Se encontraron " + this.mailsResponsablesReparacion.size() + " mails de responsables.");
+        return null;
+    }
+
+    // --- Métodos del Diagrama de Secuencia 1° Entrega ---
 
     /**
      * 1.2: Metodo llamado por la PantallaCierre.
@@ -193,6 +256,7 @@ public class GestorCierre {
             System.out.println("Error: No se encontró la entidad Orden " + nroOrden);
         } else {
             System.out.println("Orden seleccionada: " + this.ordenSeleccionada.getNroOrden());
+            this.idSismografo = this.ordenSeleccionada.getEstacionSismologica().getSismografo().getIdentificadorSismografo();
         }
     }
 
@@ -300,34 +364,11 @@ public class GestorCierre {
                     this.enviarSismografoParaReparacion();
                 }
 
-                this.obtenerMailResponsableReparacion();
-
-                // --- IMPLEMENTACIÓN DE PASOS FINALES ---
-
-                // 7.1.16: Llamada a publicar (STUB)
-                this.publicarEnMonitores();
-
-                // 7.1.18: Llamada a enviar mail (STUB)
-                this.enviarNotificacionesPorMail();
-
-                // Construir el DTO para la "vista previa" del frontend
-                // (Necesitamos obtener el sismógrafo de la orden seleccionada)
-                Sismografo sismografo = this.ordenSeleccionada.getEstacionSismologica().getSismografo();
-                String idSismografo = (sismografo != null) ? sismografo.getIdentificadorSismografo() : "N/A";
-
-                NotificacionDTO notificacion = new NotificacionDTO(
-                        idSismografo,
-                        this.estadoSismografoFueraDeServicio.getNombreEstado(),
-                        this.fechaYHoraActual,
-                        this.motivosSeleccionadosConComentario,
-                        this.mailsResponsablesReparacion
-                );
+                // Rediseño del CU
+                this.notificarSismografoFueraServicio();
 
                 // 7.1.20: Fin del Caso de Uso
                 this.finCU();
-
-                // Devolvemos el DTO al controlador
-                return notificacion;
 
             } else {
                 System.out.println("Error: No se pudo encontrar el estado 'Cerrada' para 'OrdenInspeccion'");
@@ -452,26 +493,12 @@ public class GestorCierre {
      * 7.1.13: Implementación de "obtenerMailResponsableReparacion"
      * Busca TODOS los empleados, filtra los que son responsables
      * y guarda sus mails.
-     */
+
     public void obtenerMailResponsableReparacion() {
         System.out.println("GestorCierre: Ejecutando 7.1.13 obtenerMailResponsableReparacion()...");
 
-        this.mailsResponsablesReparacion = new ArrayList<>();
 
-        // Loop [mientras haya empleados]
-        List<Empleado> todosLosEmpleados = empleadoRepository.findAll();
-
-        for (Empleado empleado : todosLosEmpleados) {
-            // 7.1.14: esResponsableDeReparacion()
-            if (empleado.esResponsableDeReparacion()) {
-                // 7.1.15: obtenerMail()
-                this.mailsResponsablesReparacion.add(empleado.obtenerMail());
-            }
-        }
-
-        System.out.println("GestorCierre: Se encontraron " + this.mailsResponsablesReparacion.size() + " mails de responsables.");
-    }
-
+     */
     /**
      * 7.1.16: Implementación de "publicarEnMonitores" (STUB)
      * Llama al servicio externo 7.1.17
